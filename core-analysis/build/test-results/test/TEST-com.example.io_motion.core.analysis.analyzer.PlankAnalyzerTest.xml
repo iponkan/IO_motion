@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-06-27T12:05:08" hostname="BARDIA" time="0.029">
+  <properties/>
+  <testcase name="HoldTracking carries correct body line angle" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.023"/>
+  <testcase name="LowConfidence when world landmarks list is empty" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <testcase name="hold pauses when body line deviation exceeds tolerance" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.004"/>
+  <testcase name="finish returns zero reps for plank" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <testcase name="valid hold accumulates time when body line is within tolerance" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <testcase name="zero good frames gives quality score 0" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <testcase name="finish returns exercise type PLANK" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <testcase name="reset clears valid hold and allows reuse" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <testcase name="perfect hold session gives quality score 100" classname="com.example.io_motion.core.analysis.analyzer.PlankAnalyzerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-06-27T10:00:33" hostname="BARDIA" time="0.018">
+<testsuite name="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-06-27T12:05:08" hostname="BARDIA" time="0.001">
   <properties/>
-  <testcase name="returns landmark when both visibility and presence exceed threshold" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.006"/>
+  <testcase name="returns landmark when both visibility and presence exceed threshold" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.0"/>
   <testcase name="returns null for out-of-bounds landmark index" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.0"/>
-  <testcase name="returns empty list for empty indices" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.001"/>
-  <testcase name="returns list when all requested landmarks are reliable" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.009"/>
+  <testcase name="returns empty list for empty indices" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.0"/>
+  <testcase name="returns list when all requested landmarks are reliable" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.0"/>
   <testcase name="accepts landmark exactly at threshold" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.001"/>
   <testcase name="returns null when visibility is below threshold" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.0"/>
   <testcase name="returns null if any single landmark fails confidence check" classname="com.example.io_motion.core.analysis.confidence.ConfidenceGateTest" time="0.0"/>

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-06-27T10:00:33" hostname="BARDIA" time="0.01">
+<testsuite name="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-06-27T12:05:08" hostname="BARDIA" time="0.006">
   <properties/>
-  <testcase name="constant signal converges to the constant" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.002"/>
-  <testcase name="OneEuroFilter3D first sample passes through unchanged" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.002"/>
+  <testcase name="constant signal converges to the constant" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.0"/>
+  <testcase name="OneEuroFilter3D first sample passes through unchanged" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.001"/>
   <testcase name="reset clears derivative memory" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.0"/>
   <testcase name="after reset first sample passes through unchanged again" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.0"/>
-  <testcase name="higher beta reduces lag on step response" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.001"/>
+  <testcase name="higher beta reduces lag on step response" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.0"/>
   <testcase name="no NaN for a ramp signal over many frames" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.004"/>
   <testcase name="output stays bounded and finite on oscillating input" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.0"/>
   <testcase name="config constructor forwards parameters correctly" classname="com.example.io_motion.core.analysis.filter.OneEuroFilterTest" time="0.001"/>
