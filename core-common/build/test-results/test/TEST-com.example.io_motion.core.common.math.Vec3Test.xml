@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.io_motion.core.common.math.Vec3Test" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-06-27T10:00:31" hostname="BARDIA" time="0.003">
+  <properties/>
+  <testcase name="dot product of perpendicular vectors is zero" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.001"/>
+  <testcase name="scalar division scales all components" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="float constructor widens to double" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="scalar multiplication scales all components" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="dot product of parallel vectors equals product of magnitudes" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="magnitudeSquared is dot product with self" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="normalized vector has unit magnitude" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="magnitude of unit axis vector is 1" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="subtraction produces correct components" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="addition produces correct components" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.001"/>
+  <testcase name="magnitude of 3-4-0 vector is 5" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <testcase name="normalizing zero vector returns ZERO without throwing" classname="com.example.io_motion.core.common.math.Vec3Test" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,4 +1,4 @@
 package com.example.io_motion.core.common
 
-// Shared data models and utilities — populated in Phase 2.
+// See: models/, math/, util/ sub-packages in this module.
 internal object CoreCommon
