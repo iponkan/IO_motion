@@ -1,4 +1,4 @@
 package com.example.io_motion.core.pose
 
-// MediaPipe + CameraX integration — populated in Phase 4.
+// See: PoseFrameSource (main entry point), PoseLandmarkerHelper, PoseImageAnalyzer.
 internal object CorePose
