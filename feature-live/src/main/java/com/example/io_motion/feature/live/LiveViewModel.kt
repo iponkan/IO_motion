@@ -8,11 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.io_motion.core.analysis.ExerciseAnalyzer
 import com.example.io_motion.core.analysis.ExerciseAnalyzerFactory
 import com.example.io_motion.core.analysis.model.AnalyzerState
+import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.pose.PoseFrameSource
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
 import com.example.io_motion.core.pose.model.PoseFrameResult
 import com.example.io_motion.core.pose.model.PoseModelVariant
+import com.example.io_motion.data.repository.SessionRepository
 import com.example.io_motion.feature.live.model.LiveUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +27,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LiveViewModel @Inject constructor(
     private val poseFrameSource: PoseFrameSource,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LiveUiState())
@@ -39,20 +42,12 @@ class LiveViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Called once from [LiveScreen] after nav args are resolved.
-     * Subsequent calls after the first are no-ops so rotation doesn't reset state.
-     */
     fun initialize(exerciseType: ExerciseType, modelVariant: PoseModelVariant) {
         if (initialized) return
         initialized = true
         _uiState.update { it.copy(exerciseType = exerciseType, modelVariant = modelVariant) }
     }
 
-    /**
-     * Binds CameraX to [lifecycleOwner] and wires the [Preview] surface.
-     * Safe to call from the main thread (Compose side-effect).
-     */
     fun bindCamera(lifecycleOwner: LifecycleOwner, surfaceProvider: Preview.SurfaceProvider?) {
         poseFrameSource.bindCamera(
             lifecycleOwner = lifecycleOwner,
@@ -68,10 +63,21 @@ class LiveViewModel @Inject constructor(
     }
 
     fun stopSession() {
-        // Phase 7: persist metrics via SessionRepository
-        analyzer?.finish()
+        val metrics = analyzer?.finish()
         analyzer = null
-        _uiState.update { it.copy(isSessionActive = false, analyzerState = AnalyzerState.AwaitingStart, liveFormScore = 0) }
+        val modelVariant = _uiState.value.modelVariant
+        _uiState.update {
+            it.copy(isSessionActive = false, analyzerState = AnalyzerState.AwaitingStart, liveFormScore = 0)
+        }
+        if (metrics != null) {
+            viewModelScope.launch {
+                sessionRepository.save(
+                    metrics = metrics,
+                    mode = AnalysisMode.LIVE,
+                    modelVariant = modelVariant.name,
+                )
+            }
+        }
     }
 
     fun selectModelVariant(variant: PoseModelVariant) {
@@ -90,7 +96,7 @@ class LiveViewModel @Inject constructor(
         }
 
         val formScore = when (analyzerState) {
-            is AnalyzerState.Tracking    -> (100 - analyzerState.alerts.size * 20).coerceAtLeast(0)
+            is AnalyzerState.Tracking     -> (100 - analyzerState.alerts.size * 20).coerceAtLeast(0)
             is AnalyzerState.HoldTracking -> if (analyzerState.isFormGood) 100 else 40
             else -> 0
         }

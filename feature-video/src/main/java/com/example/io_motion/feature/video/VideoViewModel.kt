@@ -4,10 +4,12 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.io_motion.core.analysis.ExerciseAnalyzerFactory
+import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.pose.VideoAnalysisSession
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
 import com.example.io_motion.core.pose.model.PoseModelVariant
+import com.example.io_motion.data.repository.SessionRepository
 import com.example.io_motion.feature.video.model.VideoUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -20,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class VideoViewModel @Inject constructor(
     private val videoAnalysisSession: VideoAnalysisSession,
+    private val sessionRepository: SessionRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VideoUiState>(VideoUiState.Idle)
@@ -59,6 +62,14 @@ class VideoViewModel @Inject constructor(
                         }
                         is VideoAnalysisSession.ProgressEvent.Complete -> {
                             val metrics = analyzer.finish()
+                            val capturedModelVariant = modelVariant
+                            launch {
+                                sessionRepository.save(
+                                    metrics = metrics,
+                                    mode = AnalysisMode.OFFLINE,
+                                    modelVariant = capturedModelVariant.name,
+                                )
+                            }
                             _uiState.value = VideoUiState.Result(metrics, exerciseType)
                         }
                         is VideoAnalysisSession.ProgressEvent.Error -> {
