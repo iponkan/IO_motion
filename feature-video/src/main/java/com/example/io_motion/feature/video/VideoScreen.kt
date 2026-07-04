@@ -1,8 +1,7 @@
 package com.example.io_motion.feature.video
 
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMedia
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -70,7 +69,7 @@ fun VideoScreen(
     }
 
     val videoPicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
+        PickVisualMedia()
     ) { uri -> uri?.let { viewModel.processVideo(it) } }
 
     Surface(modifier = modifier.fillMaxSize()) {
