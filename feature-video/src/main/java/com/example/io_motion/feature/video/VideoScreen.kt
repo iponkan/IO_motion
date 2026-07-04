@@ -1,0 +1,548 @@
+package com.example.io_motion.feature.video
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMedia
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.io_motion.core.analysis.model.RepMetrics
+import com.example.io_motion.core.analysis.model.SessionMetrics
+import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.pose.model.PoseModelVariant
+import com.example.io_motion.core.ui.components.MetricGauge
+import com.example.io_motion.core.ui.overlay.SkeletonOverlay
+import com.example.io_motion.feature.video.model.VideoUiState
+import kotlin.math.roundToInt
+
+@Composable
+fun VideoScreen(
+    initialExerciseType: ExerciseType,
+    initialModelVariant: PoseModelVariant,
+    onNavigateBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: VideoViewModel = hiltViewModel(),
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(initialExerciseType, initialModelVariant) {
+        viewModel.initialize(initialExerciseType, initialModelVariant)
+    }
+
+    val videoPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri -> uri?.let { viewModel.processVideo(it) } }
+
+    Surface(modifier = modifier.fillMaxSize()) {
+        AnimatedContent(
+            targetState = uiState,
+            contentKey = { state ->
+                when (state) {
+                    is VideoUiState.Idle       -> 0
+                    is VideoUiState.Processing -> 1
+                    is VideoUiState.Result     -> 2
+                    is VideoUiState.Error      -> 3
+                }
+            },
+            transitionSpec = {
+                (fadeIn(tween(300)) + slideInVertically { it / 8 })
+                    .togetherWith(fadeOut(tween(200)))
+            },
+            label = "VideoState",
+            modifier = Modifier.fillMaxSize(),
+        ) { state ->
+            when (state) {
+                is VideoUiState.Idle -> IdleContent(
+                    exerciseType = initialExerciseType,
+                    modelVariant = initialModelVariant,
+                    onPickVideo = { videoPicker.launch(PickVisualMedia.VideoOnly) },
+                    onNavigateBack = onNavigateBack,
+                )
+                is VideoUiState.Processing -> ProcessingContent(
+                    state = state,
+                    onCancel = viewModel::cancelProcessing,
+                )
+                is VideoUiState.Result -> ResultContent(
+                    state = state,
+                    onAnalyzeAnother = viewModel::reset,
+                    onNavigateBack = onNavigateBack,
+                )
+                is VideoUiState.Error -> ErrorContent(
+                    message = state.message,
+                    onRetry = viewModel::reset,
+                    onNavigateBack = onNavigateBack,
+                )
+            }
+        }
+    }
+}
+
+// ── Idle ───────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun IdleContent(
+    exerciseType: ExerciseType,
+    modelVariant: PoseModelVariant,
+    onPickVideo: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(onClick = onNavigateBack) {
+                Text("← Back", style = MaterialTheme.typography.labelLarge)
+            }
+            Spacer(Modifier.weight(1f))
+            StatBadge(exerciseType.displayName())
+            Spacer(Modifier.width(6.dp))
+            StatBadge(modelVariant.displayName)
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 28.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            Text(text = "🎬", style = MaterialTheme.typography.displayLarge)
+            Spacer(Modifier.height(20.dp))
+            Text(
+                text = "Offline Video Analysis",
+                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = "Select a recorded ${exerciseType.displayName()} video. " +
+                    "Frames are analyzed at ~15 FPS using the ${modelVariant.displayName} model on CPU.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(44.dp))
+            Button(
+                onClick = onPickVideo,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+            ) {
+                Text(
+                    text = "Select Video from Gallery",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                )
+            }
+        }
+    }
+}
+
+// ── Processing ─────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ProcessingContent(
+    state: VideoUiState.Processing,
+    onCancel: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Analyzing ${state.exerciseType.displayName()}…",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            )
+            TextButton(onClick = onCancel) {
+                Text("Cancel", color = MaterialTheme.colorScheme.error)
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        Text(
+            text = "${(state.progress * 100).roundToInt()}%",
+            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Spacer(Modifier.height(10.dp))
+        LinearProgressIndicator(
+            progress = { state.progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = "${state.framesProcessed} frames analyzed",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
+        )
+
+        Spacer(Modifier.height(28.dp))
+
+        // Live skeleton preview of the last detected frame
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(3f / 4f)
+                .clip(RoundedCornerShape(16.dp))
+                .background(Color(0xFF111111)),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (state.lastPoseFrame != null) {
+                SkeletonOverlay(
+                    poseFrame = state.lastPoseFrame,
+                    exerciseType = state.exerciseType,
+                    isMirrored = false,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Text(
+                    text = "Scanning for pose…",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.White.copy(alpha = 0.35f),
+                )
+            }
+        }
+    }
+}
+
+// ── Result ─────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ResultContent(
+    state: VideoUiState.Result,
+    onAnalyzeAnother: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    val metrics = state.metrics
+    val isPlank = state.exerciseType == ExerciseType.PLANK
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding(),
+        contentPadding = PaddingValues(bottom = 32.dp),
+    ) {
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 16.dp, top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = onNavigateBack) {
+                    Text("← Back", style = MaterialTheme.typography.labelLarge)
+                }
+                Spacer(Modifier.weight(1f))
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        text = state.exerciseType.displayName(),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        text = "Analysis Complete",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                MetricGauge(value = metrics.sessionQualityScore, label = "SESSION QUALITY")
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(16.dp))
+            if (isPlank) {
+                PlankMetricsRow(metrics, Modifier.padding(horizontal = 16.dp))
+            } else {
+                RepMetricsGrid(metrics, Modifier.padding(horizontal = 16.dp))
+            }
+        }
+
+        if (!isPlank && metrics.reps.isNotEmpty()) {
+            item {
+                Spacer(Modifier.height(24.dp))
+                Text(
+                    text = "Per-Rep Breakdown",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    modifier = Modifier.padding(horizontal = 20.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+            }
+            itemsIndexed(metrics.reps) { index, rep ->
+                RepCard(
+                    repNumber = index + 1,
+                    rep = rep,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(28.dp))
+            Button(
+                onClick = onAnalyzeAnother,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .height(52.dp),
+            ) {
+                Text(
+                    text = "Analyze Another Video",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RepMetricsGrid(metrics: SessionMetrics, modifier: Modifier = Modifier) {
+    val durationSec = metrics.totalDurationMs / 1_000L
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BigMetricCard("${metrics.repCount}", "REPS", Modifier.weight(1f))
+            BigMetricCard("${metrics.rejectedRepCount}", "REJECTED", Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BigMetricCard("%.1f".format(metrics.tempoRpm), "RPM", Modifier.weight(1f))
+            BigMetricCard("%.0f°".format(metrics.avgRomDegrees), "AVG ROM", Modifier.weight(1f))
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BigMetricCard("%d:%02d".format(durationSec / 60, durationSec % 60), "DURATION", Modifier.weight(1f))
+            BigMetricCard("${metrics.rhythmConsistency}%", "RHYTHM", Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun PlankMetricsRow(metrics: SessionMetrics, modifier: Modifier = Modifier) {
+    val holdSec = metrics.validHoldMs / 1_000L
+    val durationSec = metrics.totalDurationMs / 1_000L
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BigMetricCard(
+                "%d:%02d".format(holdSec / 60, holdSec % 60),
+                "VALID HOLD",
+                Modifier.weight(1f),
+            )
+            BigMetricCard(
+                "%.1f°".format(metrics.avgBodyLineAngle),
+                "BODY LINE",
+                Modifier.weight(1f),
+            )
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            BigMetricCard(
+                "%d:%02d".format(durationSec / 60, durationSec % 60),
+                "DURATION",
+                Modifier.weight(1f),
+            )
+        }
+    }
+}
+
+// ── Error ──────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun ErrorContent(
+    message: String,
+    onRetry: () -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(28.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(text = "⚠️", style = MaterialTheme.typography.displayMedium)
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = "Analysis Failed",
+            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = message,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(36.dp))
+        Button(onClick = onRetry, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("Try Another Video")
+        }
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(onClick = onNavigateBack, modifier = Modifier.fillMaxWidth().height(52.dp)) {
+            Text("Back to Home")
+        }
+    }
+}
+
+// ── Shared composables ─────────────────────────────────────────────────────────
+
+@Composable
+private fun BigMetricCard(value: String, label: String, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant,
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RepCard(repNumber: Int, rep: RepMetrics, modifier: Modifier = Modifier) {
+    val qualityColor = when {
+        rep.qualityScore >= 80 -> Color(0xFF2E7D32)
+        rep.qualityScore >= 60 -> Color(0xFFF57F17)
+        else -> MaterialTheme.colorScheme.error
+    }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "#$repNumber",
+                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                modifier = Modifier.width(36.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${rep.minAngle.roundToInt()}° → ${rep.maxAngle.roundToInt()}°",
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                )
+                Text(
+                    text = "${rep.rom.roundToInt()}° ROM · ${rep.durationMs}ms",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                )
+            }
+            Surface(
+                color = qualityColor.copy(alpha = 0.15f),
+                shape = RoundedCornerShape(6.dp),
+            ) {
+                Text(
+                    text = "${rep.qualityScore}",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                    color = qualityColor,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StatBadge(text: String) {
+    Surface(
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(8.dp),
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+private fun ExerciseType.displayName(): String = when (this) {
+    ExerciseType.SQUAT   -> "Squat"
+    ExerciseType.PUSH_UP -> "Push-up"
+    ExerciseType.SIT_UP  -> "Sit-up"
+    ExerciseType.PLANK   -> "Plank"
+}

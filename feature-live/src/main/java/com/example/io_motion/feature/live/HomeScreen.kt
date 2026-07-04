@@ -28,16 +28,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.pose.model.PoseModelVariant
 
 @Composable
 fun HomeScreen(
-    onStartLive: (ExerciseType, PoseModelVariant) -> Unit,
+    onStart: (ExerciseType, PoseModelVariant, AnalysisMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedExercise by remember { mutableStateOf(ExerciseType.SQUAT) }
     var selectedModel by remember { mutableStateOf(PoseModelVariant.FULL) }
+    var selectedMode by remember { mutableStateOf(AnalysisMode.LIVE) }
 
     Column(
         modifier = modifier
@@ -56,6 +58,7 @@ fun HomeScreen(
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
         )
 
+        // ── Exercise selection ────────────────────────────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = "Exercise", style = MaterialTheme.typography.titleMedium)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -68,6 +71,24 @@ fun HomeScreen(
             }
         }
 
+        // ── Analysis mode ─────────────────────────────────────────────────────
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(text = "Analysis Mode", style = MaterialTheme.typography.titleMedium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = selectedMode == AnalysisMode.LIVE,
+                    onClick = { selectedMode = AnalysisMode.LIVE },
+                    label = { Text("Live Camera") },
+                )
+                FilterChip(
+                    selected = selectedMode == AnalysisMode.OFFLINE,
+                    onClick = { selectedMode = AnalysisMode.OFFLINE },
+                    label = { Text("Video File") },
+                )
+            }
+        }
+
+        // ── Model variant ─────────────────────────────────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(text = "Model Variant", style = MaterialTheme.typography.titleMedium)
             Text(
@@ -89,11 +110,14 @@ fun HomeScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
-            onClick = { onStartLive(selectedExercise, selectedModel) },
+            onClick = { onStart(selectedExercise, selectedModel, selectedMode) },
             modifier = Modifier.fillMaxWidth().height(52.dp),
         ) {
             Text(
-                text = "Start Live Analysis",
+                text = when (selectedMode) {
+                    AnalysisMode.LIVE    -> "Start Live Analysis"
+                    AnalysisMode.OFFLINE -> "Select Video"
+                },
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
             )
         }
