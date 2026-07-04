@@ -55,6 +55,8 @@ dependencies {
     implementation(libs.hilt.navigation.compose)
     ksp(libs.hilt.android.compiler)
 
+    implementation(project(":core-common"))
+    implementation(project(":core-pose"))
     implementation(project(":core-ui"))
     implementation(project(":feature-live"))
     implementation(project(":feature-video"))
