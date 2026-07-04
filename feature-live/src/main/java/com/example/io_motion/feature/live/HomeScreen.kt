@@ -19,6 +19,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,7 @@ import com.example.io_motion.core.pose.model.PoseModelVariant
 @Composable
 fun HomeScreen(
     onStart: (ExerciseType, PoseModelVariant, AnalysisMode) -> Unit,
+    onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var selectedExercise by remember { mutableStateOf(ExerciseType.SQUAT) }
@@ -48,15 +50,26 @@ fun HomeScreen(
             .padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
-        Text(
-            text = "IO Motion",
-            style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
-        )
-        Text(
-            text = "AI Fitness Assessment",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text(
+                    text = "IO Motion",
+                    style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
+                )
+                Text(
+                    text = "AI Fitness Assessment",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
+                )
+            }
+            TextButton(onClick = onOpenHistory) {
+                Text("History", style = MaterialTheme.typography.labelLarge)
+            }
+        }
 
         // ── Exercise selection ────────────────────────────────────────────────
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
