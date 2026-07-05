@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.common.models.ThemeMode
 import com.example.io_motion.core.common.util.parseEnumOrDefault
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.feature.history.HistoryScreen
@@ -38,6 +39,8 @@ private object Routes {
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    themeMode: ThemeMode = ThemeMode.DARK,
+    onToggleTheme: () -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -53,6 +56,8 @@ fun AppNavHost(
                     }
                 },
                 onOpenHistory = { navController.navigate(Routes.HISTORY) },
+                themeMode = themeMode,
+                onToggleTheme = onToggleTheme,
             )
         }
 

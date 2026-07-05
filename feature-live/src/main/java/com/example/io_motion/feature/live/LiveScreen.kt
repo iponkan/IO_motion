@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -137,7 +136,7 @@ fun LiveScreen(
             if (overlayMessage != null) {
                 Surface(
                     color = Color.Black.copy(alpha = 0.65f),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = MaterialTheme.shapes.medium,
                 ) {
                     Text(
                         text = overlayMessage,
@@ -175,14 +174,14 @@ fun LiveScreen(
             ) {
                 when (val s = uiState.analyzerState) {
                     is AnalyzerState.Tracking -> {
-                        RepCounter(repCount = s.repCount)
+                        RepCounter(repCount = s.repCount, contentColor = Color.White)
                         AngleReadout(angle = s.primaryAngle, label = "ANGLE")
-                        MetricGauge(value = uiState.liveFormScore, label = "FORM")
+                        MetricGauge(value = uiState.liveFormScore, label = "FORM", contentColor = Color.White)
                     }
                     is AnalyzerState.HoldTracking -> {
                         HoldDuration(validHoldMs = s.validHoldMs)
                         AngleReadout(angle = s.bodyLineAngle, label = "BODY LINE")
-                        MetricGauge(value = uiState.liveFormScore, label = "FORM")
+                        MetricGauge(value = uiState.liveFormScore, label = "FORM", contentColor = Color.White)
                     }
                     else -> Spacer(modifier = Modifier.height(80.dp))
                 }
@@ -241,7 +240,7 @@ private fun ModelChips(selected: PoseModelVariant, onSelect: (PoseModelVariant) 
             Surface(
                 onClick = { onSelect(variant) },
                 color = if (variant == selected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.2f),
-                shape = RoundedCornerShape(6.dp),
+                shape = MaterialTheme.shapes.extraSmall,
             ) {
                 Text(
                     text = variant.displayName,

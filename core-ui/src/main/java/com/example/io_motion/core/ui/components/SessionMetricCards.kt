@@ -8,7 +8,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.io_motion.core.analysis.model.RepMetrics
 import com.example.io_motion.core.analysis.model.SessionMetrics
+import com.example.io_motion.core.ui.theme.extendedColors
 import kotlin.math.roundToInt
 
 /**
@@ -29,10 +31,10 @@ import kotlin.math.roundToInt
 
 @Composable
 fun BigMetricCard(value: String, label: String, modifier: Modifier = Modifier) {
-    Surface(
+    Card(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
@@ -99,15 +101,15 @@ fun PlankMetricsGrid(metrics: SessionMetrics, modifier: Modifier = Modifier, sho
 @Composable
 fun RepCard(repNumber: Int, rep: RepMetrics, modifier: Modifier = Modifier) {
     val qualityColor = when {
-        rep.qualityScore >= 80 -> Color(0xFF2E7D32)
-        rep.qualityScore >= 60 -> Color(0xFFF57F17)
+        rep.qualityScore >= 80 -> MaterialTheme.extendedColors.success
+        rep.qualityScore >= 60 -> MaterialTheme.extendedColors.warning
         else -> MaterialTheme.colorScheme.error
     }
-    Surface(
+    Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        shape = MaterialTheme.shapes.medium,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
@@ -132,7 +134,7 @@ fun RepCard(repNumber: Int, rep: RepMetrics, modifier: Modifier = Modifier) {
             }
             Surface(
                 color = qualityColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp),
+                shape = MaterialTheme.shapes.extraSmall,
             ) {
                 Text(
                     text = "${rep.qualityScore}",

@@ -16,6 +16,7 @@ fun RepCounter(
     repCount: Int,
     modifier: Modifier = Modifier,
     label: String = "REPS",
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     Column(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -24,12 +25,12 @@ fun RepCounter(
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = Color.White.copy(alpha = 0.7f),
+            color = contentColor.copy(alpha = 0.7f),
         )
         Text(
             text = "$repCount",
             style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
-            color = Color.White,
+            color = contentColor,
         )
     }
 }

@@ -59,6 +59,7 @@ dependencies {
     implementation(project(":core-common"))
     implementation(project(":core-pose"))
     implementation(project(":core-ui"))
+    implementation(project(":data"))
     implementation(project(":feature-live"))
     implementation(project(":feature-video"))
     implementation(project(":feature-history"))
