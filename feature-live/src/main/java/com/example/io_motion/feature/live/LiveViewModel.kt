@@ -12,6 +12,7 @@ import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.pose.PoseFrameSource
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
+import com.example.io_motion.core.pose.model.PoseError
 import com.example.io_motion.core.pose.model.PoseFrameResult
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.data.repository.SessionRepository
@@ -39,6 +40,9 @@ class LiveViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             poseFrameSource.frames.collect { frameResult -> onFrameResult(frameResult) }
+        }
+        viewModelScope.launch {
+            poseFrameSource.errors.collect { error -> onPoseError(error) }
         }
     }
 
@@ -106,7 +110,24 @@ class LiveViewModel @Inject constructor(
                 inferenceTimeMs = frameResult.inferenceTimeMs,
                 analyzerState = analyzerState,
                 liveFormScore = formScore,
+                // A frame only arrives once the landmarker has (re-)initialized successfully, so
+                // this is a natural point to clear a previously surfaced fatal error — e.g. after
+                // selectModelVariant() recovers by switching away from a variant that failed.
+                fatalErrorMessage = null,
             )
+        }
+    }
+
+    /**
+     * [PoseError]s were previously only logged (see [PoseFrameSource]), so a fatal setup failure
+     * (e.g. the landmarker failing to initialize on both GPU and CPU) left the user staring at a
+     * camera preview with no skeleton and no explanation. Non-fatal errors are transient/recoverable
+     * and are already logged upstream, so they don't need to interrupt the UI.
+     */
+    private fun onPoseError(error: PoseError) {
+        if (!error.isFatal) return
+        _uiState.update {
+            it.copy(fatalErrorMessage = "Pose detection is unavailable on this device. Try restarting the session.")
         }
     }
 

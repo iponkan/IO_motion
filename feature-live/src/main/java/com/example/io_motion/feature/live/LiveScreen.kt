@@ -129,6 +129,7 @@ fun LiveScreen(
         // ── Center state overlay ───────────────────────────────────────────────
         val overlayMessage: String? = when {
             !hasCameraPermission -> "Camera permission required"
+            uiState.fatalErrorMessage != null -> uiState.fatalErrorMessage
             !uiState.isSessionActive -> "Tap Start Session to begin"
             uiState.analyzerState is AnalyzerState.AwaitingStart -> "Get into starting position"
             uiState.analyzerState is AnalyzerState.LowConfidence -> "Person not fully in frame"

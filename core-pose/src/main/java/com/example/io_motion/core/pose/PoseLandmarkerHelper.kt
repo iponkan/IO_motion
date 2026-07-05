@@ -16,7 +16,17 @@ import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
  * Thin wrapper around [PoseLandmarker] for `LIVE_STREAM` mode.
  *
  * Initialization attempts GPU delegation first and automatically retries with CPU if GPU
- * fails (e.g., when the device GPU driver does not support the required delegate API).
+ * fails. GPU delegate failures surface in two different ways depending on the device:
+ *  - Synchronously, thrown directly out of [PoseLandmarker.createFromOptions] — handled in
+ *    [setup].
+ *  - Asynchronously, reported via the MediaPipe error listener at first inference — many GPU
+ *    driver incompatibilities only manifest once the delegate actually runs. Handled in the
+ *    error listener installed in [createLandmarker].
+ *
+ * [poseLandmarker], [isClosed], and [hasFallenBackToCpu] are all guarded by [lock] because they
+ * can be touched from three different threads: whichever thread calls [setup]/[detectAsync]/
+ * [close] (the app's analysis executor), and the MediaPipe-internal thread that invokes the
+ * error listener.
  *
  * All calls to [detectAsync] are non-blocking; results arrive via [ResultListener].
  */
@@ -34,20 +44,18 @@ internal class PoseLandmarkerHelper(
         fun onError(message: String, isFatal: Boolean = false)
     }
 
+    private val lock = Any()
     private var poseLandmarker: PoseLandmarker? = null
+    private var isClosed = false
+    private var hasFallenBackToCpu = false
 
     /** Creates the [PoseLandmarker]. Must be called before [detectAsync]. */
     fun setup() {
         try {
             createLandmarker(config)
         } catch (gpuException: Exception) {
-            Log.w(TAG, "GPU delegate failed (${gpuException.message}), retrying with CPU")
-            try {
-                config = config.copy(delegate = PoseDelegate.CPU)
-                createLandmarker(config)
-            } catch (cpuException: Exception) {
-                listener.onError("Failed to initialize PoseLandmarker: ${cpuException.message}", isFatal = true)
-            }
+            Log.w(TAG, "GPU delegate failed synchronously (${gpuException.message}), retrying with CPU")
+            fallBackToCpu()
         }
     }
 
@@ -60,17 +68,20 @@ internal class PoseLandmarkerHelper(
      *   Passing a timestamp ≤ the previous one will cause MediaPipe to drop the frame.
      */
     fun detectAsync(mpImage: MPImage, frameTimestampMs: Long) {
-        poseLandmarker?.detectAsync(mpImage, frameTimestampMs)
+        synchronized(lock) { poseLandmarker }?.detectAsync(mpImage, frameTimestampMs)
     }
 
     /** Closes and releases the underlying [PoseLandmarker]. Safe to call multiple times. */
     fun close() {
-        poseLandmarker?.close()
-        poseLandmarker = null
+        synchronized(lock) {
+            isClosed = true
+            poseLandmarker?.close()
+            poseLandmarker = null
+        }
     }
 
     /** Returns `true` if the landmarker has been successfully initialized. */
-    val isReady: Boolean get() = poseLandmarker != null
+    val isReady: Boolean get() = synchronized(lock) { poseLandmarker != null }
 
     // ──────────────────────────────────────────────
     // Private
@@ -104,12 +115,47 @@ internal class PoseLandmarkerHelper(
                 listener.onResults(result, frameTimestampMs, inferenceTime)
             }
             .setErrorListener { error ->
-                listener.onError(error.message ?: "Unknown MediaPipe error")
+                val shouldFallBack = cfg.delegate == PoseDelegate.GPU && synchronized(lock) {
+                    if (isClosed || hasFallenBackToCpu) {
+                        false
+                    } else {
+                        hasFallenBackToCpu = true
+                        true
+                    }
+                }
+                if (shouldFallBack) {
+                    // Run the retry on its own thread rather than inline on this MediaPipe-internal
+                    // callback thread — closing and recreating the landmarker isn't something this
+                    // thread should re-enter.
+                    Log.w(TAG, "GPU delegate failed asynchronously (${error.message}), retrying with CPU")
+                    Thread({ fallBackToCpu() }, "PoseLandmarker-CpuFallback").start()
+                } else {
+                    listener.onError(error.message ?: "Unknown MediaPipe error")
+                }
             }
             .build()
 
-        poseLandmarker = PoseLandmarker.createFromOptions(context, options)
+        val created = PoseLandmarker.createFromOptions(context, options)
+        synchronized(lock) {
+            // close() may have run concurrently while createFromOptions() was in flight (e.g. the
+            // screen was left mid-fallback); don't resurrect a landmarker after that.
+            if (isClosed) created.close() else poseLandmarker = created
+        }
         Log.i(TAG, "PoseLandmarker initialized: model=${cfg.modelVariant.displayName} delegate=${cfg.delegate}")
+    }
+
+    private fun fallBackToCpu() {
+        synchronized(lock) {
+            hasFallenBackToCpu = true
+            poseLandmarker?.close()
+            poseLandmarker = null
+        }
+        config = config.copy(delegate = PoseDelegate.CPU)
+        try {
+            createLandmarker(config)
+        } catch (cpuException: Exception) {
+            listener.onError("Failed to initialize PoseLandmarker: ${cpuException.message}", isFatal = true)
+        }
     }
 
     private companion object {

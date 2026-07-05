@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
 import com.example.io_motion.core.pose.converter.PoseResultConverter
+import com.example.io_motion.core.pose.model.PoseError
 import com.example.io_motion.core.pose.model.PoseFrameResult
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -46,6 +47,20 @@ class PoseFrameSource @Inject constructor(
     /** Shared flow of [PoseFrameResult] emitted at the camera frame rate. */
     val frames: SharedFlow<PoseFrameResult> = _frames.asSharedFlow()
 
+    private val _errors = MutableSharedFlow<PoseError>(
+        replay = 0,
+        extraBufferCapacity = 4,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /**
+     * Shared flow of [PoseError]s from the underlying landmarker (e.g. failed to initialize
+     * on both GPU and CPU, or a runtime detection error). Previously these were only [Log.e]'d,
+     * so a fatal setup failure left the user staring at a camera preview with no skeleton and
+     * no explanation — collect this to surface it.
+     */
+    val errors: SharedFlow<PoseError> = _errors.asSharedFlow()
+
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     private val fpsTracker = FpsTracker()
 
@@ -70,6 +85,7 @@ class PoseFrameSource @Inject constructor(
 
         override fun onError(message: String, isFatal: Boolean) {
             Log.e(TAG, "PoseLandmarker error (fatal=$isFatal): $message")
+            _errors.tryEmit(PoseError(message, isFatal))
         }
     }
 
