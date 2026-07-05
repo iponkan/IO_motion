@@ -39,8 +39,8 @@ private object Routes {
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
-    onCycleTheme: () -> Unit = {},
+    themeMode: ThemeMode = ThemeMode.DARK,
+    onToggleTheme: () -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -57,7 +57,7 @@ fun AppNavHost(
                 },
                 onOpenHistory = { navController.navigate(Routes.HISTORY) },
                 themeMode = themeMode,
-                onCycleTheme = onCycleTheme,
+                onToggleTheme = onToggleTheme,
             )
         }
 

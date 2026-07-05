@@ -1,6 +1,9 @@
 package com.example.io_motion.feature.history
 
 import android.content.Intent
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,42 +14,44 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.common.models.displayName
-import com.example.io_motion.core.ui.components.MetricGauge
-import com.example.io_motion.core.ui.components.PlankMetricsGrid
-import com.example.io_motion.core.ui.components.RepCard
-import com.example.io_motion.core.ui.components.RepMetricsGrid
+import com.example.io_motion.core.common.models.metaLabel
+import com.example.io_motion.core.ui.theme.Accent
+import com.example.io_motion.core.ui.theme.CutCorner
+import com.example.io_motion.core.ui.theme.IOMotionTextStyles
+import com.example.io_motion.core.ui.theme.LocalCutCornerEnabled
+import com.example.io_motion.core.ui.theme.cutCornerShape
+import com.example.io_motion.core.ui.theme.extendedColors
+import com.example.io_motion.core.ui.theme.scoreColor
 import com.example.io_motion.data.model.SessionRecord
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionReportScreen(
     sessionId: Long,
@@ -70,36 +75,38 @@ fun SessionReportScreen(
         }
     }
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = uiState.record?.metrics?.exerciseType?.displayName() ?: "Session Report",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
+    Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 22.dp, vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(20.dp).clickable(onClick = onNavigateBack),
             )
-        },
-    ) { innerPadding ->
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = uiState.record?.metrics?.exerciseType?.displayName() ?: "Session Report",
+                style = IOMotionTextStyles.screenTitle,
+                color = MaterialTheme.colorScheme.onBackground,
+            )
+        }
+
         when {
-            uiState.isLoading -> Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+            uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Accent)
             }
-            uiState.record == null -> Box(Modifier.fillMaxSize().padding(innerPadding), contentAlignment = Alignment.Center) {
-                Text("Session not found.")
+            uiState.record == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Session not found.", color = MaterialTheme.extendedColors.textMuted)
             }
             else -> ReportContent(
                 record = uiState.record!!,
                 onExportJson = viewModel::exportJson,
                 onExportCsv = viewModel::exportCsv,
-                modifier = Modifier.padding(innerPadding),
             )
         }
     }
@@ -114,113 +121,258 @@ private fun ReportContent(
 ) {
     val metrics = record.metrics
     val isPlank = metrics.exerciseType == ExerciseType.PLANK
+    val cutCornerEnabled = LocalCutCornerEnabled.current
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = 32.dp),
+        contentPadding = PaddingValues(horizontal = 22.dp, vertical = 0.dp),
     ) {
         // ── Metadata ──────────────────────────────────────────────────────────
         item {
-            Text(
-                text = record.recordedAt.toDateString(),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.55f),
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-        }
-
-        // ── Metadata badges ───────────────────────────────────────────────────
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                SmallBadge(if (record.analysisMode == AnalysisMode.LIVE) "Live" else "Video")
-                SmallBadge(record.modelVariant.lowercase().replaceFirstChar { it.uppercase() })
+            Column(modifier = Modifier.padding(start = 36.dp)) {
+                Text(
+                    text = record.recordedAt.toDateString(),
+                    style = IOMotionTextStyles.metaTimestamp,
+                    color = MaterialTheme.extendedColors.textMuted,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = "${record.analysisMode.metaLabel()} · ${record.modelVariant.uppercase()}",
+                    style = IOMotionTextStyles.metaModeVariant,
+                    color = MaterialTheme.extendedColors.textMutedSecondary,
+                )
             }
         }
 
-        // ── Quality gauge ─────────────────────────────────────────────────────
+        // ── Score ring ────────────────────────────────────────────────────────
         item {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                MetricGauge(value = metrics.sessionQualityScore, label = "SESSION QUALITY")
+                Text(
+                    text = "SESSION QUALITY",
+                    style = IOMotionTextStyles.scoreCaption,
+                    color = MaterialTheme.extendedColors.textMuted,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                ScoreRing(score = metrics.sessionQualityScore)
             }
         }
 
-        // ── Metrics grid ──────────────────────────────────────────────────────
+        // ── Stat grid ─────────────────────────────────────────────────────────
         item {
-            Spacer(Modifier.height(16.dp))
-            if (isPlank) {
-                PlankMetricsGrid(metrics, Modifier.padding(horizontal = 16.dp), showQualityCard = true)
+            Spacer(Modifier.height(28.dp))
+            val cells = if (isPlank) {
+                val holdSec = metrics.validHoldMs / 1_000L
+                val durationSec = metrics.totalDurationMs / 1_000L
+                listOf(
+                    "%d:%02d".format(holdSec / 60, holdSec % 60) to "VALID HOLD",
+                    "%.1f°".format(metrics.avgBodyLineAngle) to "BODY LINE",
+                    "%d:%02d".format(durationSec / 60, durationSec % 60) to "DURATION",
+                )
             } else {
-                RepMetricsGrid(metrics, Modifier.padding(horizontal = 16.dp))
+                val durationSec = metrics.totalDurationMs / 1_000L
+                listOf(
+                    "${metrics.repCount}" to "REPS",
+                    "${metrics.rejectedRepCount}" to "REJECTED",
+                    "%.1f".format(metrics.tempoRpm) to "RPM",
+                    "%.0f°".format(metrics.avgRomDegrees) to "AVG ROM",
+                    "%d:%02d".format(durationSec / 60, durationSec % 60) to "DURATION",
+                    "${metrics.rhythmConsistency}%" to "RHYTHM",
+                )
             }
+            HairlineStatGrid(cells = cells, columns = 3)
         }
 
         // ── Per-rep breakdown ─────────────────────────────────────────────────
         if (!isPlank && metrics.reps.isNotEmpty()) {
             item {
-                Spacer(Modifier.height(24.dp))
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(32.dp))
                 Text(
-                    text = "Per-Rep Breakdown",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    modifier = Modifier.padding(horizontal = 20.dp),
+                    text = "PER-REP BREAKDOWN",
+                    style = IOMotionTextStyles.sectionLabel,
+                    color = MaterialTheme.extendedColors.textMuted,
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(14.dp))
             }
             itemsIndexed(metrics.reps) { index, rep ->
-                RepCard(
+                RepRow(
                     repNumber = index + 1,
-                    rep = rep,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                    minAngle = rep.minAngle,
+                    maxAngle = rep.maxAngle,
+                    rom = rep.rom,
+                    durationMs = rep.durationMs,
+                    qualityScore = rep.qualityScore,
+                    showDivider = index != metrics.reps.lastIndex,
                 )
             }
         }
 
         // ── Export buttons ────────────────────────────────────────────────────
         item {
-            Spacer(Modifier.height(28.dp))
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(32.dp))
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                OutlinedButton(
-                    onClick = onExportCsv,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                ) { Text("Export CSV") }
-                Button(
-                    onClick = onExportJson,
-                    modifier = Modifier.weight(1f).height(48.dp),
-                ) { Text("Export JSON") }
+                ExportButton("EXPORT CSV", onExportCsv, Modifier.weight(1f), cutCornerEnabled)
+                ExportButton("EXPORT JSON", onExportJson, Modifier.weight(1f), cutCornerEnabled)
+            }
+            Spacer(Modifier.height(40.dp))
+        }
+    }
+}
+
+@Composable
+private fun ScoreRing(score: Int, modifier: Modifier = Modifier) {
+    val fraction = score.coerceIn(0, 100) / 100f
+    val trackColor = MaterialTheme.extendedColors.hairline
+    val arcColor = MaterialTheme.extendedColors.scoreColor(score)
+
+    Box(modifier = modifier.size(172.dp), contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val strokeWidth = 8.dp.toPx()
+            val inset = strokeWidth / 2f
+            val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
+            val topLeft = Offset(inset, inset)
+
+            drawArc(
+                color = trackColor,
+                startAngle = -90f,
+                sweepAngle = 360f,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+            )
+            if (fraction > 0f) {
+                drawArc(
+                    color = arcColor,
+                    startAngle = -90f,
+                    sweepAngle = 360f * fraction,
+                    useCenter = false,
+                    topLeft = topLeft,
+                    size = arcSize,
+                    style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
+                )
+            }
+        }
+        Text(
+            text = "$score",
+            style = IOMotionTextStyles.scoreNumber,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
+private fun HairlineStatGrid(cells: List<Pair<String, String>>, columns: Int, modifier: Modifier = Modifier) {
+    val hairline = MaterialTheme.extendedColors.hairline
+    val rows = cells.chunked(columns)
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .drawBehind {
+                val strokeWidth = 1.dp.toPx()
+                drawLine(hairline, Offset(0f, 0f), Offset(size.width, 0f), strokeWidth)
+                drawLine(hairline, Offset(0f, 0f), Offset(0f, size.height), strokeWidth)
+            },
+    ) {
+        rows.forEach { row ->
+            Row(modifier = Modifier.fillMaxWidth()) {
+                row.forEach { (value, label) ->
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .drawBehind {
+                                val strokeWidth = 1.dp.toPx()
+                                drawLine(hairline, Offset(size.width, 0f), Offset(size.width, size.height), strokeWidth)
+                                drawLine(hairline, Offset(0f, size.height), Offset(size.width, size.height), strokeWidth)
+                            }
+                            .padding(vertical = 20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(text = value, style = IOMotionTextStyles.statValue, color = MaterialTheme.colorScheme.onBackground)
+                        Spacer(Modifier.height(4.dp))
+                        Text(text = label, style = IOMotionTextStyles.statLabel, color = MaterialTheme.extendedColors.textMuted)
+                    }
+                }
+                repeat(columns - row.size) { Spacer(modifier = Modifier.weight(1f)) }
             }
         }
     }
 }
 
-// ── Shared composables ─────────────────────────────────────────────────────────
+@Composable
+private fun RepRow(
+    repNumber: Int,
+    minAngle: Double,
+    maxAngle: Double,
+    rom: Double,
+    durationMs: Long,
+    qualityScore: Int,
+    showDivider: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "#$repNumber",
+                style = IOMotionTextStyles.repTag,
+                color = Accent,
+                modifier = Modifier.width(36.dp),
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "${minAngle.roundToInt()}° → ${maxAngle.roundToInt()}°",
+                    style = IOMotionTextStyles.repAngleRange,
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = "${rom.roundToInt()}° ROM · ${durationMs}ms",
+                    style = IOMotionTextStyles.repMeta,
+                    color = MaterialTheme.extendedColors.textMuted,
+                )
+            }
+            Text(
+                text = "$qualityScore",
+                style = IOMotionTextStyles.repScore,
+                color = MaterialTheme.extendedColors.scoreColor(qualityScore),
+            )
+        }
+        if (showDivider) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(MaterialTheme.extendedColors.hairline),
+            )
+        }
+    }
+}
 
 @Composable
-private fun SmallBadge(text: String) {
-    Surface(
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        shape = MaterialTheme.shapes.extraSmall,
+private fun ExportButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier, cutCornerEnabled: Boolean = true) {
+    Box(
+        modifier = modifier
+            .height(48.dp)
+            .background(
+                color = MaterialTheme.extendedColors.hairline,
+                shape = cutCornerShape(CutCorner.selectedRow, cutCornerEnabled),
+            )
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            text = label,
+            style = IOMotionTextStyles.segmentedLabel,
+            color = MaterialTheme.colorScheme.onBackground,
         )
     }
 }

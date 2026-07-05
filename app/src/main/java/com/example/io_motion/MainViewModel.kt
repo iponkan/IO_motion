@@ -3,6 +3,7 @@ package com.example.io_motion
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.io_motion.core.common.models.ThemeMode
+import com.example.io_motion.core.common.models.toggled
 import com.example.io_motion.data.repository.ThemeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,15 +20,10 @@ class MainViewModel @Inject constructor(
     val themeMode: StateFlow<ThemeMode> = themeRepository.themeMode.stateIn(
         scope = viewModelScope,
         started = SharingStarted.Eagerly,
-        initialValue = ThemeMode.SYSTEM,
+        initialValue = ThemeMode.DARK,
     )
 
-    fun cycleThemeMode() {
-        val next = when (themeMode.value) {
-            ThemeMode.LIGHT -> ThemeMode.DARK
-            ThemeMode.DARK -> ThemeMode.SYSTEM
-            ThemeMode.SYSTEM -> ThemeMode.LIGHT
-        }
-        viewModelScope.launch { themeRepository.setThemeMode(next) }
+    fun toggleThemeMode() {
+        viewModelScope.launch { themeRepository.setThemeMode(themeMode.value.toggled()) }
     }
 }

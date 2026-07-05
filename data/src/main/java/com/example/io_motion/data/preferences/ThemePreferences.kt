@@ -18,7 +18,7 @@ class ThemePreferences @Inject constructor(
     override val themeMode = dataStore.data.map { prefs ->
         prefs[THEME_MODE_KEY]?.let { name ->
             runCatching { ThemeMode.valueOf(name) }.getOrNull()
-        } ?: ThemeMode.SYSTEM
+        } ?: ThemeMode.DARK
     }
 
     override suspend fun setThemeMode(mode: ThemeMode) {

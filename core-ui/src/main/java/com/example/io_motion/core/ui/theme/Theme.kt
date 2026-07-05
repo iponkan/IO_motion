@@ -1,6 +1,5 @@
 package com.example.io_motion.core.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -11,60 +10,69 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import com.example.io_motion.core.common.models.ThemeMode
-import com.example.io_motion.core.common.models.isDark
+
+// Muted, opaque tint tones derived from each theme's background — used for M3 "container" roles
+// (badges, secondary cards) that the design doc doesn't define tokens for but older screens
+// (LiveScreen/VideoScreen, outside this redesign's scope) still rely on for visual consistency.
+private fun containerTone(background: Color, tint: Color, fraction: Float = 0.18f): Color =
+    lerp(background, tint, fraction)
 
 private val LightColorScheme = lightColorScheme(
-    primary = OrangePrimaryLight,
-    onPrimary = OnOrangePrimaryLight,
-    primaryContainer = OrangePrimaryContainerLight,
-    onPrimaryContainer = OnOrangePrimaryContainerLight,
-    secondary = NeutralSecondaryLight,
-    onSecondary = OnNeutralSecondaryLight,
-    secondaryContainer = NeutralSecondaryContainerLight,
-    onSecondaryContainer = OnNeutralSecondaryContainerLight,
-    tertiary = GreenTertiaryLight,
-    onTertiary = OnGreenTertiaryLight,
-    tertiaryContainer = GreenTertiaryContainerLight,
-    onTertiaryContainer = OnGreenTertiaryContainerLight,
+    primary = Accent,
+    onPrimary = AccentOn,
+    primaryContainer = containerTone(BackgroundLight, Accent),
+    onPrimaryContainer = TextPrimaryLight,
+    secondary = TextMutedLight,
+    onSecondary = BackgroundLight,
+    secondaryContainer = containerTone(BackgroundLight, TextMutedLight),
+    onSecondaryContainer = TextPrimaryLight,
+    tertiary = SuccessLight,
+    onTertiary = BackgroundLight,
+    tertiaryContainer = containerTone(BackgroundLight, SuccessLight),
+    onTertiaryContainer = TextPrimaryLight,
     background = BackgroundLight,
-    onBackground = OnBackgroundLight,
+    onBackground = TextPrimaryLight,
     surface = BackgroundLight,
-    onSurface = OnBackgroundLight,
-    surfaceVariant = SurfaceVariantLight,
-    onSurfaceVariant = OnSurfaceVariantLight,
-    outline = OutlineLight,
-    error = ErrorLight,
-    onError = OnErrorLight,
-    errorContainer = ErrorContainerLight,
-    onErrorContainer = OnErrorContainerLight,
+    onSurface = TextPrimaryLight,
+    surfaceVariant = containerTone(BackgroundLight, TextMutedLight),
+    onSurfaceVariant = TextMutedLight,
+    surfaceContainerLow = containerTone(BackgroundLight, TextMutedLight, 0.10f),
+    outline = TextMutedSecondaryLight,
+    error = DangerLight,
+    onError = AccentOn,
+    errorContainer = containerTone(BackgroundLight, DangerLight),
+    onErrorContainer = TextPrimaryLight,
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = OrangePrimaryDark,
-    onPrimary = OnOrangePrimaryDark,
-    primaryContainer = OrangePrimaryContainerDark,
-    onPrimaryContainer = OnOrangePrimaryContainerDark,
-    secondary = NeutralSecondaryDark,
-    onSecondary = OnNeutralSecondaryDark,
-    secondaryContainer = NeutralSecondaryContainerDark,
-    onSecondaryContainer = OnNeutralSecondaryContainerDark,
-    tertiary = GreenTertiaryDark,
-    onTertiary = OnGreenTertiaryDark,
-    tertiaryContainer = GreenTertiaryContainerDark,
-    onTertiaryContainer = OnGreenTertiaryContainerDark,
+    primary = Accent,
+    onPrimary = AccentOn,
+    primaryContainer = containerTone(BackgroundDark, Accent),
+    onPrimaryContainer = TextPrimaryDark,
+    secondary = TextMutedDark,
+    onSecondary = BackgroundDark,
+    secondaryContainer = containerTone(BackgroundDark, TextMutedDark),
+    onSecondaryContainer = TextPrimaryDark,
+    tertiary = SuccessDark,
+    onTertiary = BackgroundDark,
+    tertiaryContainer = containerTone(BackgroundDark, SuccessDark),
+    onTertiaryContainer = TextPrimaryDark,
     background = BackgroundDark,
-    onBackground = OnBackgroundDark,
+    onBackground = TextPrimaryDark,
     surface = BackgroundDark,
-    onSurface = OnBackgroundDark,
-    surfaceVariant = SurfaceVariantDark,
-    onSurfaceVariant = OnSurfaceVariantDark,
-    outline = OutlineDark,
-    error = ErrorDark,
-    onError = OnErrorDark,
-    errorContainer = ErrorContainerDark,
-    onErrorContainer = OnErrorContainerDark,
+    onSurface = TextPrimaryDark,
+    surfaceVariant = containerTone(BackgroundDark, TextMutedDark),
+    onSurfaceVariant = TextMutedDark,
+    surfaceContainerLow = containerTone(BackgroundDark, TextMutedDark, 0.10f),
+    outline = TextMutedSecondaryDark,
+    error = DangerDark,
+    onError = AccentOn,
+    errorContainer = containerTone(BackgroundDark, DangerDark),
+    onErrorContainer = TextPrimaryDark,
 )
 
 val IOMotionShapes = Shapes(
@@ -77,10 +85,10 @@ val IOMotionShapes = Shapes(
 
 @Composable
 fun IO_motionTheme(
-    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    themeMode: ThemeMode = ThemeMode.DARK,
     content: @Composable () -> Unit,
 ) {
-    val darkTheme = themeMode.isDark(systemDark = isSystemInDarkTheme())
+    val darkTheme = themeMode == ThemeMode.DARK
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     val extendedColors = if (darkTheme) DarkExtendedColors else LightExtendedColors
 

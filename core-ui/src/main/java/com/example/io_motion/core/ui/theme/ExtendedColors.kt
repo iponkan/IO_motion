@@ -6,32 +6,50 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
 /**
- * Semantic quality-tier colors that don't map to a standard M3 role. Kept separate from
- * `tertiary` (a generic M3 accent role) even though they currently share tones, since they mean
- * something specific (rep/session quality score) and may diverge from the brand accent later.
+ * Design tokens from doc/CLAUDE_CODE_PROMPT_DESIGN.md that don't map onto a standard M3
+ * colorScheme role (muted text tiers, hairline dividers, the score-color trio).
  */
 data class ExtendedColors(
+    val textMuted: Color,
+    val textMutedSecondary: Color,
+    val hairline: Color,
+    val segmentedTrackBorder: Color,
+    val accentOn: Color,
     val success: Color,
-    val onSuccess: Color,
     val warning: Color,
-    val onWarning: Color,
+    val danger: Color,
 )
 
 val LightExtendedColors = ExtendedColors(
+    textMuted = TextMutedLight,
+    textMutedSecondary = TextMutedSecondaryLight,
+    hairline = HairlineLight.copy(alpha = HairlineLightAlpha),
+    segmentedTrackBorder = SegmentedTrackBorderLight.copy(alpha = SegmentedTrackBorderLightAlpha),
+    accentOn = AccentOn,
     success = SuccessLight,
-    onSuccess = OnSuccessLight,
     warning = WarningLight,
-    onWarning = OnWarningLight,
+    danger = DangerLight,
 )
 
 val DarkExtendedColors = ExtendedColors(
+    textMuted = TextMutedDark,
+    textMutedSecondary = TextMutedSecondaryDark,
+    hairline = HairlineDark.copy(alpha = HairlineDarkAlpha),
+    segmentedTrackBorder = SegmentedTrackBorderDark.copy(alpha = SegmentedTrackBorderDarkAlpha),
+    accentOn = AccentOn,
     success = SuccessDark,
-    onSuccess = OnSuccessDark,
     warning = WarningDark,
-    onWarning = OnWarningDark,
+    danger = DangerDark,
 )
 
 val LocalExtendedColors = staticCompositionLocalOf { LightExtendedColors }
 
 val MaterialTheme.extendedColors: ExtendedColors
     @Composable get() = LocalExtendedColors.current
+
+/** Score-color rule: score >= 85 -> success; 60-84 -> warning; below 60 -> danger. */
+fun ExtendedColors.scoreColor(score: Int): Color = when {
+    score >= 85 -> success
+    score >= 60 -> warning
+    else        -> danger
+}

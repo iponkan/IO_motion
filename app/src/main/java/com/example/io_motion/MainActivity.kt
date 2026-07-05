@@ -4,14 +4,13 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.io_motion.core.common.models.isDark
+import com.example.io_motion.core.common.models.ThemeMode
 import com.example.io_motion.core.ui.theme.IO_motionTheme
 import com.example.io_motion.navigation.AppNavHost
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,7 +23,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
             val themeMode by mainViewModel.themeMode.collectAsState()
-            val darkTheme = themeMode.isDark(systemDark = isSystemInDarkTheme())
+            val darkTheme = themeMode == ThemeMode.DARK
 
             // In-app Light/Dark overrides must re-color the system bar icons too — the system
             // setting alone (which enableEdgeToEdge reads once at startup) isn't enough once the
@@ -39,7 +38,7 @@ class MainActivity : ComponentActivity() {
             IO_motionTheme(themeMode = themeMode) {
                 AppNavHost(
                     themeMode = themeMode,
-                    onCycleTheme = mainViewModel::cycleThemeMode,
+                    onToggleTheme = mainViewModel::toggleThemeMode,
                 )
             }
         }
