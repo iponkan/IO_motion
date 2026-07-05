@@ -1,11 +1,16 @@
 package com.example.io_motion.data
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.example.io_motion.data.dao.SessionDao
 import com.example.io_motion.data.di.ApplicationScope
+import com.example.io_motion.data.preferences.ThemePreferences
 import com.example.io_motion.data.repository.SessionRepository
 import com.example.io_motion.data.repository.SessionRepositoryImpl
+import com.example.io_motion.data.repository.ThemeRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -17,6 +22,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
+private val Context.themeDataStore: DataStore<Preferences> by preferencesDataStore(name = "theme_prefs")
+
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class DataModule {
@@ -25,7 +32,16 @@ abstract class DataModule {
     @Singleton
     abstract fun bindSessionRepository(impl: SessionRepositoryImpl): SessionRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindThemeRepository(impl: ThemePreferences): ThemeRepository
+
     companion object {
+        @Provides
+        @Singleton
+        fun provideThemeDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+            context.themeDataStore
+
         @Provides
         @Singleton
         fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =

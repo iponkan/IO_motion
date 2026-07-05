@@ -31,6 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.common.models.ThemeMode
+import com.example.io_motion.core.common.models.displayName
 import com.example.io_motion.core.pose.model.PoseModelVariant
 
 @Composable
@@ -38,6 +40,8 @@ fun HomeScreen(
     onStart: (ExerciseType, PoseModelVariant, AnalysisMode) -> Unit,
     onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier,
+    themeMode: ThemeMode = ThemeMode.SYSTEM,
+    onCycleTheme: () -> Unit = {},
 ) {
     var selectedExercise by remember { mutableStateOf(ExerciseType.SQUAT) }
     var selectedModel by remember { mutableStateOf(PoseModelVariant.FULL) }
@@ -66,8 +70,13 @@ fun HomeScreen(
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.65f),
                 )
             }
-            TextButton(onClick = onOpenHistory) {
-                Text("History", style = MaterialTheme.typography.labelLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onCycleTheme) {
+                    Text(themeMode.displayName(), style = MaterialTheme.typography.labelLarge)
+                }
+                TextButton(onClick = onOpenHistory) {
+                    Text("History", style = MaterialTheme.typography.labelLarge)
+                }
             }
         }
 

@@ -175,14 +175,14 @@ fun LiveScreen(
             ) {
                 when (val s = uiState.analyzerState) {
                     is AnalyzerState.Tracking -> {
-                        RepCounter(repCount = s.repCount)
+                        RepCounter(repCount = s.repCount, contentColor = Color.White)
                         AngleReadout(angle = s.primaryAngle, label = "ANGLE")
-                        MetricGauge(value = uiState.liveFormScore, label = "FORM")
+                        MetricGauge(value = uiState.liveFormScore, label = "FORM", contentColor = Color.White)
                     }
                     is AnalyzerState.HoldTracking -> {
                         HoldDuration(validHoldMs = s.validHoldMs)
                         AngleReadout(angle = s.bodyLineAngle, label = "BODY LINE")
-                        MetricGauge(value = uiState.liveFormScore, label = "FORM")
+                        MetricGauge(value = uiState.liveFormScore, label = "FORM", contentColor = Color.White)
                     }
                     else -> Spacer(modifier = Modifier.height(80.dp))
                 }

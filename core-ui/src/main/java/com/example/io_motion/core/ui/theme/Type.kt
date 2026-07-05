@@ -1,4 +1,4 @@
-package com.example.io_motion.ui.theme
+package com.example.io_motion.core.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

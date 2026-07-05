@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.io_motion.core.analysis.model.RepMetrics
 import com.example.io_motion.core.analysis.model.SessionMetrics
+import com.example.io_motion.core.ui.theme.extendedColors
 import kotlin.math.roundToInt
 
 /**
@@ -99,8 +100,8 @@ fun PlankMetricsGrid(metrics: SessionMetrics, modifier: Modifier = Modifier, sho
 @Composable
 fun RepCard(repNumber: Int, rep: RepMetrics, modifier: Modifier = Modifier) {
     val qualityColor = when {
-        rep.qualityScore >= 80 -> Color(0xFF2E7D32)
-        rep.qualityScore >= 60 -> Color(0xFFF57F17)
+        rep.qualityScore >= 80 -> MaterialTheme.extendedColors.success
+        rep.qualityScore >= 60 -> MaterialTheme.extendedColors.warning
         else -> MaterialTheme.colorScheme.error
     }
     Surface(

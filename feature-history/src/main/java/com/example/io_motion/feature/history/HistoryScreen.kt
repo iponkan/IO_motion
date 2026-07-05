@@ -35,6 +35,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.common.models.displayName
+import com.example.io_motion.core.ui.theme.extendedColors
 import com.example.io_motion.data.model.SessionRecord
 
 @Composable
@@ -100,8 +101,8 @@ private fun SessionCard(
     val metrics = record.metrics
     val isPlank = metrics.exerciseType == ExerciseType.PLANK
     val qualityColor = when {
-        metrics.sessionQualityScore >= 80 -> Color(0xFF2E7D32)
-        metrics.sessionQualityScore >= 60 -> Color(0xFFF57F17)
+        metrics.sessionQualityScore >= 80 -> MaterialTheme.extendedColors.success
+        metrics.sessionQualityScore >= 60 -> MaterialTheme.extendedColors.warning
         else -> MaterialTheme.colorScheme.error
     }
 
