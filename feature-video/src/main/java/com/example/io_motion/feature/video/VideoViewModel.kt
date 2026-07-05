@@ -1,11 +1,13 @@
 package com.example.io_motion.feature.video
 
 import android.net.Uri
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.io_motion.core.analysis.ExerciseAnalyzerFactory
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.common.util.parseEnumOrDefault
 import com.example.io_motion.core.pose.VideoAnalysisSession
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
 import com.example.io_motion.core.pose.model.PoseModelVariant
@@ -23,22 +25,17 @@ import javax.inject.Inject
 class VideoViewModel @Inject constructor(
     private val videoAnalysisSession: VideoAnalysisSession,
     private val sessionRepository: SessionRepository,
+    savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<VideoUiState>(VideoUiState.Idle)
     val uiState: StateFlow<VideoUiState> = _uiState.asStateFlow()
 
-    private var exerciseType = ExerciseType.SQUAT
-    private var modelVariant = PoseModelVariant.FULL
-    private var initialized = false
+    // Read directly from the nav backstack's SavedStateHandle rather than via a separate
+    // initialize() call from the composable — see LiveViewModel for the race this avoids.
+    private val exerciseType = parseEnumOrDefault(savedStateHandle["exerciseType"], ExerciseType.SQUAT)
+    private val modelVariant = parseEnumOrDefault(savedStateHandle["modelVariant"], PoseModelVariant.FULL)
     private var processingJob: Job? = null
-
-    fun initialize(exerciseType: ExerciseType, modelVariant: PoseModelVariant) {
-        if (initialized) return
-        initialized = true
-        this.exerciseType = exerciseType
-        this.modelVariant = modelVariant
-    }
 
     fun processVideo(uri: Uri) {
         processingJob?.cancel()

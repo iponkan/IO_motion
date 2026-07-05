@@ -46,7 +46,6 @@ import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.analysis.model.AnalyzerState
 import com.example.io_motion.core.analysis.model.FormAlert
-import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.core.ui.components.FpsLatencyBadge
 import com.example.io_motion.core.ui.components.FormAlertBanner
@@ -56,8 +55,6 @@ import com.example.io_motion.core.ui.overlay.SkeletonOverlay
 
 @Composable
 fun LiveScreen(
-    initialExerciseType: ExerciseType,
-    initialModelVariant: PoseModelVariant,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LiveViewModel = hiltViewModel(),
@@ -65,10 +62,6 @@ fun LiveScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val uiState by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(initialExerciseType, initialModelVariant) {
-        viewModel.initialize(initialExerciseType, initialModelVariant)
-    }
 
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -129,6 +122,7 @@ fun LiveScreen(
         // ── Center state overlay ───────────────────────────────────────────────
         val overlayMessage: String? = when {
             !hasCameraPermission -> "Camera permission required"
+            uiState.fatalErrorMessage != null -> uiState.fatalErrorMessage
             !uiState.isSessionActive -> "Tap Start Session to begin"
             uiState.analyzerState is AnalyzerState.AwaitingStart -> "Get into starting position"
             uiState.analyzerState is AnalyzerState.LowConfidence -> "Person not fully in frame"

@@ -5,6 +5,10 @@ import com.example.io_motion.core.common.math.Vec3
 /**
  * Three-axis wrapper around [OneEuroFilter] for smoothing 3D landmark coordinates.
  * Each axis is filtered independently with identical configuration.
+ *
+ * Not currently wired into any analyzer — all four exercise analyzers smooth only the derived
+ * primary *angle* signal via the scalar [OneEuroFilter], not raw landmark positions. Reserved for
+ * a future pass that needs smoothed 3D landmarks directly (e.g. velocity-based metrics).
  */
 class OneEuroFilter3D(config: OneEuroFilterConfig = OneEuroFilterConfig()) {
 

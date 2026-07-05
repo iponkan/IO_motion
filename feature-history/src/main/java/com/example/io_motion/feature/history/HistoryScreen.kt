@@ -34,10 +34,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.common.models.displayName
 import com.example.io_motion.data.model.SessionRecord
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 @Composable
 fun HistoryScreen(
@@ -222,12 +220,3 @@ private fun MetricChip(value: String, label: String, valueColor: Color = Color.U
     }
 }
 
-private fun ExerciseType.displayName() = when (this) {
-    ExerciseType.SQUAT   -> "Squat"
-    ExerciseType.PUSH_UP -> "Push-up"
-    ExerciseType.SIT_UP  -> "Sit-up"
-    ExerciseType.PLANK   -> "Plank"
-}
-
-private fun Long.toDateString(): String =
-    SimpleDateFormat("MMM d, yyyy  HH:mm", Locale.getDefault()).format(Date(this))

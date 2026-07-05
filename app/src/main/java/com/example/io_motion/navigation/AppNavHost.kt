@@ -10,6 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.common.util.parseEnumOrDefault
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.feature.history.HistoryScreen
 import com.example.io_motion.feature.history.SessionReportScreen
@@ -32,14 +33,6 @@ private object Routes {
 
     fun report(sessionId: Long) = "report/$sessionId"
 }
-
-/**
- * Parses [value] as a constant of enum [T], falling back to [default] for null, blank, or
- * unrecognized values (e.g. a stale deep link or restored backstack referencing a renamed
- * constant) instead of throwing and crashing navigation.
- */
-private inline fun <reified T : Enum<T>> parseEnumArg(value: String?, default: T): T =
-    value?.let { raw -> enumValues<T>().firstOrNull { it.name == raw } } ?: default
 
 @Composable
 fun AppNavHost(
@@ -66,21 +59,14 @@ fun AppNavHost(
         composable(
             route = Routes.LIVE,
             arguments = listOf(
+                // Not read here — LiveViewModel reads "exerciseType"/"modelVariant" directly from
+                // the nav backstack's SavedStateHandle (see LiveViewModel), which avoids the
+                // initialize()-after-construction race the old approach had.
                 navArgument("exerciseType") { type = NavType.StringType },
                 navArgument("modelVariant") { type = NavType.StringType },
             ),
-        ) { backStackEntry ->
-            val exerciseType = parseEnumArg(
-                backStackEntry.arguments?.getString("exerciseType"), ExerciseType.SQUAT
-            )
-            val modelVariant = parseEnumArg(
-                backStackEntry.arguments?.getString("modelVariant"), PoseModelVariant.FULL
-            )
-            LiveScreen(
-                initialExerciseType = exerciseType,
-                initialModelVariant = modelVariant,
-                onNavigateBack = { navController.popBackStack() },
-            )
+        ) {
+            LiveScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         composable(
@@ -90,10 +76,10 @@ fun AppNavHost(
                 navArgument("modelVariant") { type = NavType.StringType },
             ),
         ) { backStackEntry ->
-            val exerciseType = parseEnumArg(
+            val exerciseType = parseEnumOrDefault(
                 backStackEntry.arguments?.getString("exerciseType"), ExerciseType.SQUAT
             )
-            val modelVariant = parseEnumArg(
+            val modelVariant = parseEnumOrDefault(
                 backStackEntry.arguments?.getString("modelVariant"), PoseModelVariant.FULL
             )
             VideoScreen(

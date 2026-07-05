@@ -19,4 +19,9 @@ data class LiveUiState(
     val poseFrame: PoseFrame? = null,
     /** Live form score (0–100) derived from active form alerts. Precise per-rep quality is in session reports (Phase 7). */
     val liveFormScore: Int = 0,
+    /**
+     * Curated, user-facing message set when the pose engine reports a fatal error (e.g. failed
+     * to initialize on both GPU and CPU delegates). Null when there is no active error.
+     */
+    val fatalErrorMessage: String? = null,
 )

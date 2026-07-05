@@ -35,7 +35,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,11 +45,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.io_motion.core.analysis.model.RepMetrics
-import com.example.io_motion.core.analysis.model.SessionMetrics
 import com.example.io_motion.core.common.models.ExerciseType
+import com.example.io_motion.core.common.models.displayName
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.core.ui.components.MetricGauge
+import com.example.io_motion.core.ui.components.PlankMetricsGrid
+import com.example.io_motion.core.ui.components.RepCard
+import com.example.io_motion.core.ui.components.RepMetricsGrid
 import com.example.io_motion.core.ui.overlay.SkeletonOverlay
 import com.example.io_motion.feature.video.model.VideoUiState
 import kotlin.math.roundToInt
@@ -64,10 +65,6 @@ fun VideoScreen(
     viewModel: VideoViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
-    LaunchedEffect(initialExerciseType, initialModelVariant) {
-        viewModel.initialize(initialExerciseType, initialModelVariant)
-    }
 
     val videoPicker = rememberLauncherForActivityResult(
         PickVisualMedia()
@@ -318,7 +315,7 @@ private fun ResultContent(
         item {
             Spacer(Modifier.height(16.dp))
             if (isPlank) {
-                PlankMetricsRow(metrics, Modifier.padding(horizontal = 16.dp))
+                PlankMetricsGrid(metrics, Modifier.padding(horizontal = 16.dp))
             } else {
                 RepMetricsGrid(metrics, Modifier.padding(horizontal = 16.dp))
             }
@@ -357,52 +354,6 @@ private fun ResultContent(
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun RepMetricsGrid(metrics: SessionMetrics, modifier: Modifier = Modifier) {
-    val durationSec = metrics.totalDurationMs / 1_000L
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BigMetricCard("${metrics.repCount}", "REPS", Modifier.weight(1f))
-            BigMetricCard("${metrics.rejectedRepCount}", "REJECTED", Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BigMetricCard("%.1f".format(metrics.tempoRpm), "RPM", Modifier.weight(1f))
-            BigMetricCard("%.0f°".format(metrics.avgRomDegrees), "AVG ROM", Modifier.weight(1f))
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BigMetricCard("%d:%02d".format(durationSec / 60, durationSec % 60), "DURATION", Modifier.weight(1f))
-            BigMetricCard("${metrics.rhythmConsistency}%", "RHYTHM", Modifier.weight(1f))
-        }
-    }
-}
-
-@Composable
-private fun PlankMetricsRow(metrics: SessionMetrics, modifier: Modifier = Modifier) {
-    val holdSec = metrics.validHoldMs / 1_000L
-    val durationSec = metrics.totalDurationMs / 1_000L
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BigMetricCard(
-                "%d:%02d".format(holdSec / 60, holdSec % 60),
-                "VALID HOLD",
-                Modifier.weight(1f),
-            )
-            BigMetricCard(
-                "%.1f°".format(metrics.avgBodyLineAngle),
-                "BODY LINE",
-                Modifier.weight(1f),
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            BigMetricCard(
-                "%d:%02d".format(durationSec / 60, durationSec % 60),
-                "DURATION",
-                Modifier.weight(1f),
-            )
         }
     }
 }
@@ -451,81 +402,6 @@ private fun ErrorContent(
 // ── Shared composables ─────────────────────────────────────────────────────────
 
 @Composable
-private fun BigMetricCard(value: String, label: String, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f),
-            )
-        }
-    }
-}
-
-@Composable
-private fun RepCard(repNumber: Int, rep: RepMetrics, modifier: Modifier = Modifier) {
-    val qualityColor = when {
-        rep.qualityScore >= 80 -> Color(0xFF2E7D32)
-        rep.qualityScore >= 60 -> Color(0xFFF57F17)
-        else -> MaterialTheme.colorScheme.error
-    }
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "#$repNumber",
-                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
-                modifier = Modifier.width(36.dp),
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "${rep.minAngle.roundToInt()}° → ${rep.maxAngle.roundToInt()}°",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                )
-                Text(
-                    text = "${rep.rom.roundToInt()}° ROM · ${rep.durationMs}ms",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                )
-            }
-            Surface(
-                color = qualityColor.copy(alpha = 0.15f),
-                shape = RoundedCornerShape(6.dp),
-            ) {
-                Text(
-                    text = "${rep.qualityScore}",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = qualityColor,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun StatBadge(text: String) {
     Surface(
         color = MaterialTheme.colorScheme.secondaryContainer,
@@ -538,11 +414,4 @@ private fun StatBadge(text: String) {
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
         )
     }
-}
-
-private fun ExerciseType.displayName(): String = when (this) {
-    ExerciseType.SQUAT   -> "Squat"
-    ExerciseType.PUSH_UP -> "Push-up"
-    ExerciseType.SIT_UP  -> "Sit-up"
-    ExerciseType.PLANK   -> "Plank"
 }

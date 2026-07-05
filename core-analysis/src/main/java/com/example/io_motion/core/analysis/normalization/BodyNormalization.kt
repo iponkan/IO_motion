@@ -13,6 +13,10 @@ import com.example.io_motion.core.common.models.PoseLandmarkIndex
  * so that results are independent of the subject's distance from the camera.
  *
  * All inputs expect world-space landmarks (metric units, hip-center origin).
+ *
+ * Not currently called by any analyzer — all quality scoring so far uses angles, which don't
+ * need this. Reserved for a future distance- or velocity-based metric (see [BodyNormalizationTest]
+ * for verified behavior in the meantime).
  */
 object BodyNormalization {
 

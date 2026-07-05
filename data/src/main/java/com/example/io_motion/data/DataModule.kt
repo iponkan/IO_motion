@@ -30,6 +30,10 @@ abstract class DataModule {
         @Singleton
         fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "io_motion.db")
+                // Safe only because AppDatabase.version has never changed (there is no prior
+                // released schema to migrate from). The moment version is bumped, this must be
+                // replaced with an explicit addMigrations(...) — see AppDatabase's kdoc — or it
+                // will silently wipe every user's session history on upgrade.
                 .fallbackToDestructiveMigration()
                 .build()
 

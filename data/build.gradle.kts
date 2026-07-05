@@ -24,6 +24,12 @@ android {
     }
 }
 
+// Room writes a JSON snapshot of the schema here on every build (see AppDatabase.exportSchema).
+// Commit this directory — future Migrations are validated against these snapshots.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 dependencies {
     implementation(project(":core-common"))
     implementation(project(":core-analysis"))
