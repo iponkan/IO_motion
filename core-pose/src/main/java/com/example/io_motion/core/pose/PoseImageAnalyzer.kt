@@ -18,11 +18,12 @@ import com.google.mediapipe.framework.image.BitmapImageBuilder
  * requirement that would come with accessing `imageProxy.image`.
  */
 internal class PoseImageAnalyzer(
-    private val landmarkerHelper: PoseLandmarkerHelper,
+    private val landmarkerHelperProvider: () -> PoseLandmarkerHelper?,
 ) : ImageAnalysis.Analyzer {
 
     override fun analyze(imageProxy: ImageProxy) {
-        if (!landmarkerHelper.isReady) {
+        val landmarkerHelper = landmarkerHelperProvider()
+        if (landmarkerHelper == null || !landmarkerHelper.isReady) {
             imageProxy.close()
             return
         }

@@ -48,7 +48,11 @@ class PoseFrameSource @Inject constructor(
 
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     private val fpsTracker = FpsTracker()
-    private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
+
+    // Written only on [analysisExecutor] (serialized with [PoseImageAnalyzer.analyze]) after the
+    // initial synchronous setup in [bindUseCases]; @Volatile gives the analyzer thread a
+    // consistent view without needing to read through the executor itself.
+    @Volatile private var poseLandmarkerHelper: PoseLandmarkerHelper? = null
     private var cameraProvider: ProcessCameraProvider? = null
     private var currentConfig: PoseLandmarkerConfig = PoseLandmarkerConfig()
 
@@ -103,17 +107,23 @@ class PoseFrameSource @Inject constructor(
     /**
      * Switches the active model variant or delegate without rebinding the camera.
      * The previous landmarker is closed and a new one is created with [config].
+     *
+     * Runs on [analysisExecutor] so it is serialized with in-flight [PoseImageAnalyzer.analyze]
+     * calls — otherwise closing the old helper here (main thread) could race a `detectAsync`
+     * call still running on the analyzer thread.
      */
     fun updateConfig(config: PoseLandmarkerConfig) {
         currentConfig = config
-        recreateLandmarker(config)
+        analysisExecutor.execute { recreateLandmarker(config) }
     }
 
     /** Unbinds the camera and releases the landmarker. */
     fun unbindCamera() {
         cameraProvider?.unbindAll()
-        poseLandmarkerHelper?.close()
-        poseLandmarkerHelper = null
+        analysisExecutor.execute {
+            poseLandmarkerHelper?.close()
+            poseLandmarkerHelper = null
+        }
         fpsTracker.reset()
     }
 
@@ -138,7 +148,7 @@ class PoseFrameSource @Inject constructor(
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
             .build()
             .also { analysis ->
-                analysis.setAnalyzer(analysisExecutor, PoseImageAnalyzer(poseLandmarkerHelper!!))
+                analysis.setAnalyzer(analysisExecutor, PoseImageAnalyzer { poseLandmarkerHelper })
             }
 
         val useCases = buildList {

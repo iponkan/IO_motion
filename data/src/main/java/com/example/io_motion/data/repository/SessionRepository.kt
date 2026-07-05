@@ -10,19 +10,23 @@ interface SessionRepository {
     val sessions: Flow<List<SessionRecord>>
 
     /**
-     * Persists a completed session and returns its generated database ID.
+     * Schedules a completed session to be persisted on an application-scoped coroutine.
+     *
+     * This is intentionally not a `suspend` function awaited by the caller: it must keep
+     * writing even if the calling ViewModel/screen is torn down immediately after this call
+     * returns (e.g. the user backs out right after stopping a session).
      *
      * @param metrics Computed metrics from the analysis engine.
      * @param mode Whether this was a live-camera or offline-video session.
      * @param modelVariant Name of the pose model variant used (e.g. "FULL").
      * @param recordedAt Session start epoch millis; defaults to now.
      */
-    suspend fun save(
+    fun save(
         metrics: SessionMetrics,
         mode: AnalysisMode,
         modelVariant: String,
         recordedAt: Long = System.currentTimeMillis(),
-    ): Long
+    )
 
     /** Returns the full [SessionRecord] for [id], or null if not found. */
     suspend fun getById(id: Long): SessionRecord?

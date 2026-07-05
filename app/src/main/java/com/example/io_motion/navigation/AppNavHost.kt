@@ -33,6 +33,14 @@ private object Routes {
     fun report(sessionId: Long) = "report/$sessionId"
 }
 
+/**
+ * Parses [value] as a constant of enum [T], falling back to [default] for null, blank, or
+ * unrecognized values (e.g. a stale deep link or restored backstack referencing a renamed
+ * constant) instead of throwing and crashing navigation.
+ */
+private inline fun <reified T : Enum<T>> parseEnumArg(value: String?, default: T): T =
+    value?.let { raw -> enumValues<T>().firstOrNull { it.name == raw } } ?: default
+
 @Composable
 fun AppNavHost(
     modifier: Modifier = Modifier,
@@ -62,11 +70,11 @@ fun AppNavHost(
                 navArgument("modelVariant") { type = NavType.StringType },
             ),
         ) { backStackEntry ->
-            val exerciseType = ExerciseType.valueOf(
-                backStackEntry.arguments?.getString("exerciseType") ?: ExerciseType.SQUAT.name
+            val exerciseType = parseEnumArg(
+                backStackEntry.arguments?.getString("exerciseType"), ExerciseType.SQUAT
             )
-            val modelVariant = PoseModelVariant.valueOf(
-                backStackEntry.arguments?.getString("modelVariant") ?: PoseModelVariant.FULL.name
+            val modelVariant = parseEnumArg(
+                backStackEntry.arguments?.getString("modelVariant"), PoseModelVariant.FULL
             )
             LiveScreen(
                 initialExerciseType = exerciseType,
@@ -82,11 +90,11 @@ fun AppNavHost(
                 navArgument("modelVariant") { type = NavType.StringType },
             ),
         ) { backStackEntry ->
-            val exerciseType = ExerciseType.valueOf(
-                backStackEntry.arguments?.getString("exerciseType") ?: ExerciseType.SQUAT.name
+            val exerciseType = parseEnumArg(
+                backStackEntry.arguments?.getString("exerciseType"), ExerciseType.SQUAT
             )
-            val modelVariant = PoseModelVariant.valueOf(
-                backStackEntry.arguments?.getString("modelVariant") ?: PoseModelVariant.FULL.name
+            val modelVariant = parseEnumArg(
+                backStackEntry.arguments?.getString("modelVariant"), PoseModelVariant.FULL
             )
             VideoScreen(
                 initialExerciseType = exerciseType,

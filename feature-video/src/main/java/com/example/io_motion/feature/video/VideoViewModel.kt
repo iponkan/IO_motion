@@ -62,14 +62,14 @@ class VideoViewModel @Inject constructor(
                         }
                         is VideoAnalysisSession.ProgressEvent.Complete -> {
                             val metrics = analyzer.finish()
-                            val capturedModelVariant = modelVariant
-                            launch {
-                                sessionRepository.save(
-                                    metrics = metrics,
-                                    mode = AnalysisMode.OFFLINE,
-                                    modelVariant = capturedModelVariant.name,
-                                )
-                            }
+                            // save() schedules its own application-scoped coroutine, so the
+                            // write survives even if the user taps "Analyze Another" or
+                            // Cancel immediately after this, which would cancel processingJob.
+                            sessionRepository.save(
+                                metrics = metrics,
+                                mode = AnalysisMode.OFFLINE,
+                                modelVariant = modelVariant.name,
+                            )
                             _uiState.value = VideoUiState.Result(metrics, exerciseType)
                         }
                         is VideoAnalysisSession.ProgressEvent.Error -> {

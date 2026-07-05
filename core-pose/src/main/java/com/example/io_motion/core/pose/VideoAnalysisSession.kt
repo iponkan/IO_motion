@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.util.Log
 import com.example.io_motion.core.common.models.PoseFrame
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
 import com.example.io_motion.core.pose.converter.PoseResultConverter
@@ -67,9 +68,13 @@ class VideoAnalysisSession @Inject constructor(
             var timestampMs = 0L
 
             while (timestampMs <= durationMs && currentCoroutineContext().isActive) {
+                // OPTION_CLOSEST decodes the actual frame nearest this timestamp. OPTION_CLOSEST_SYNC
+                // would instead snap to the nearest sync/key frame (typically 1-2s apart), causing
+                // the same bitmap to be re-analyzed many times in a row between keyframes and making
+                // rep motion invisible to the analyzer.
                 val rawBitmap = retriever.getFrameAtTime(
                     timestampMs * 1_000L, // ms → µs
-                    MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+                    MediaMetadataRetriever.OPTION_CLOSEST,
                 )
                 val bitmap = rawBitmap?.scaleIfNeeded()
 
@@ -93,7 +98,10 @@ class VideoAnalysisSession @Inject constructor(
         } catch (e: kotlinx.coroutines.CancellationException) {
             throw e
         } catch (e: Exception) {
-            emit(ProgressEvent.Error(e.message ?: "Video analysis failed"))
+            // e.message often exposes internal paths or MediaPipe/MediaMetadataRetriever status
+            // codes that are meaningless to a user — log the real cause, surface a plain one.
+            Log.e(TAG, "Video analysis failed", e)
+            emit(ProgressEvent.Error("Video analysis failed. Please try a different video."))
         } finally {
             landmarker?.close()
             retriever.release()
@@ -128,6 +136,7 @@ class VideoAnalysisSession @Inject constructor(
     }
 
     private companion object {
+        const val TAG = "VideoAnalysisSession"
         const val FRAME_INTERVAL_MS = 66L  // ~15 FPS
         const val MAX_BITMAP_DIM = 720
     }

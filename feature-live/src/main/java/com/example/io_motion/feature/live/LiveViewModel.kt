@@ -70,13 +70,11 @@ class LiveViewModel @Inject constructor(
             it.copy(isSessionActive = false, analyzerState = AnalyzerState.AwaitingStart, liveFormScore = 0)
         }
         if (metrics != null) {
-            viewModelScope.launch {
-                sessionRepository.save(
-                    metrics = metrics,
-                    mode = AnalysisMode.LIVE,
-                    modelVariant = modelVariant.name,
-                )
-            }
+            sessionRepository.save(
+                metrics = metrics,
+                mode = AnalysisMode.LIVE,
+                modelVariant = modelVariant.name,
+            )
         }
     }
 
@@ -114,7 +112,20 @@ class LiveViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        if (_uiState.value.isSessionActive) analyzer?.finish()
+        // viewModelScope is already cancelled by this point, so persistence must not depend on
+        // it — sessionRepository.save() schedules onto its own application-scoped coroutine.
+        // Without this, a session ended by system back/gesture (rather than the Stop button)
+        // would be silently discarded here.
+        if (_uiState.value.isSessionActive) {
+            val metrics = analyzer?.finish()
+            if (metrics != null) {
+                sessionRepository.save(
+                    metrics = metrics,
+                    mode = AnalysisMode.LIVE,
+                    modelVariant = _uiState.value.modelVariant.name,
+                )
+            }
+        }
         poseFrameSource.unbindCamera()
     }
 }

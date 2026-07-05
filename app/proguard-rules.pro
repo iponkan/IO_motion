@@ -19,3 +19,17 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# ── MediaPipe Tasks Vision (core-pose) ──────────────────────────────────────
+# MediaPipe's native (JNI) layer and its internal protobuf/TFLite plumbing look up
+# classes and members by name/signature at runtime; the AAR does not ship its own
+# consumer rules, so R8 will otherwise strip or rename things the native side needs.
+-keep class com.google.mediapipe.** { *; }
+-keep interface com.google.mediapipe.** { *; }
+-dontwarn com.google.mediapipe.**
+
+-keep class com.google.protobuf.** { *; }
+-dontwarn com.google.protobuf.**
+
+-keep class org.tensorflow.lite.** { *; }
+-dontwarn org.tensorflow.lite.**

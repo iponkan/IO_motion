@@ -11,7 +11,6 @@ import com.google.mediapipe.tasks.core.Delegate as MpDelegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
-import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Thin wrapper around [PoseLandmarker] for `LIVE_STREAM` mode.
@@ -37,10 +36,6 @@ internal class PoseLandmarkerHelper(
 
     private var poseLandmarker: PoseLandmarker? = null
 
-    // Tracks the wall-clock time when each detectAsync call was submitted.
-    // AtomicLong gives thread-safe updates without locking on the hot path.
-    private val frameSubmitTimeMs = AtomicLong(0L)
-
     /** Creates the [PoseLandmarker]. Must be called before [detectAsync]. */
     fun setup() {
         try {
@@ -65,7 +60,6 @@ internal class PoseLandmarkerHelper(
      *   Passing a timestamp ≤ the previous one will cause MediaPipe to drop the frame.
      */
     fun detectAsync(mpImage: MPImage, frameTimestampMs: Long) {
-        frameSubmitTimeMs.set(SystemClock.uptimeMillis())
         poseLandmarker?.detectAsync(mpImage, frameTimestampMs)
     }
 
@@ -101,8 +95,13 @@ internal class PoseLandmarkerHelper(
             .setMinTrackingConfidence(cfg.minTrackingConfidence)
             .setRunningMode(RunningMode.LIVE_STREAM)
             .setResultListener { result, _ ->
-                val inferenceTime = SystemClock.uptimeMillis() - frameSubmitTimeMs.get()
-                listener.onResults(result, frameSubmitTimeMs.get(), inferenceTime)
+                // result.timestampMs() echoes back the timestamp passed to detectAsync for this
+                // specific result, so it stays correctly paired even when LIVE_STREAM results
+                // arrive out of submission order under load — unlike a single shared "last
+                // submitted" timestamp, which would misattribute both fields.
+                val frameTimestampMs = result.timestampMs()
+                val inferenceTime = SystemClock.uptimeMillis() - frameTimestampMs
+                listener.onResults(result, frameTimestampMs, inferenceTime)
             }
             .setErrorListener { error ->
                 listener.onError(error.message ?: "Unknown MediaPipe error")
