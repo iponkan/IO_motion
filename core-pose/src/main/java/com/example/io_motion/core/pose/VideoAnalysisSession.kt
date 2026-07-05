@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.isActive
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -120,6 +121,21 @@ class VideoAnalysisSession @Inject constructor(
     }
 
     private fun createLandmarker(config: PoseLandmarkerConfig): PoseLandmarker {
+        // A missing model asset has been observed to crash the process with a native SIGSEGV
+        // inside PoseLandmarker.createFromOptions below rather than throwing a catchable error
+        // (see PoseLandmarkerHelper.assertModelAssetExists) — the outer try/catch in process()
+        // can't catch a native crash, so this must fail fast with an ordinary exception first.
+        try {
+            context.assets.open(config.modelVariant.assetFileName).close()
+        } catch (e: IOException) {
+            throw IllegalStateException(
+                "Model asset not found: \"${config.modelVariant.assetFileName}\". Run " +
+                    "scripts/download_models.sh and confirm the .task files are under " +
+                    "core-pose/src/main/assets/models/.",
+                e,
+            )
+        }
+
         val baseOptions = BaseOptions.builder()
             .setModelAssetPath(config.modelVariant.assetFileName)
             .setDelegate(MpDelegate.CPU)

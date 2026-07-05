@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# Downloads the three MediaPipe Pose Landmarker model variants into core-pose/src/main/assets/.
+# Downloads the three MediaPipe Pose Landmarker model variants into
+# core-pose/src/main/assets/models/.
 # Run once from the project root before building: bash scripts/download_models.sh
+#
+# The models/ subdirectory is required, not cosmetic: MediaPipe's Android asset resolver
+# rejects a bare filename with no '/' in it (see PoseModelVariant's kdoc).
 set -euo pipefail
 
-ASSETS_DIR="core-pose/src/main/assets"
+ASSETS_DIR="core-pose/src/main/assets/models"
 mkdir -p "$ASSETS_DIR"
 
 BASE="https://storage.googleapis.com/mediapipe-models/pose_landmarker"

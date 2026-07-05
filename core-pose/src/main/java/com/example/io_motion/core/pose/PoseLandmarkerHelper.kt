@@ -11,12 +11,16 @@ import com.google.mediapipe.tasks.core.Delegate as MpDelegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarker
 import com.google.mediapipe.tasks.vision.poselandmarker.PoseLandmarkerResult
+import java.io.IOException
 
 /**
  * Thin wrapper around [PoseLandmarker] for `LIVE_STREAM` mode.
  *
- * Initialization attempts GPU delegation first and automatically retries with CPU if GPU
- * fails. GPU delegate failures surface in two different ways depending on the device:
+ * [PoseLandmarkerConfig.delegate] defaults to CPU (see its kdoc) because GPU delegate
+ * initialization has crashed the process natively on some devices — a failure mode no amount of
+ * Kotlin-side error handling can catch. If a caller does opt into GPU explicitly, this class
+ * still retries with CPU on the *catchable* failure modes, which surface in two different ways
+ * depending on the device:
  *  - Synchronously, thrown directly out of [PoseLandmarker.createFromOptions] — handled in
  *    [setup].
  *  - Asynchronously, reported via the MediaPipe error listener at first inference — many GPU
@@ -88,6 +92,8 @@ internal class PoseLandmarkerHelper(
     // ──────────────────────────────────────────────
 
     private fun createLandmarker(cfg: PoseLandmarkerConfig) {
+        assertModelAssetExists(cfg.modelVariant.assetFileName)
+
         val mpDelegate = when (cfg.delegate) {
             PoseDelegate.GPU -> MpDelegate.GPU
             PoseDelegate.CPU -> MpDelegate.CPU
@@ -142,6 +148,25 @@ internal class PoseLandmarkerHelper(
             if (isClosed) created.close() else poseLandmarker = created
         }
         Log.i(TAG, "PoseLandmarker initialized: model=${cfg.modelVariant.displayName} delegate=${cfg.delegate}")
+    }
+
+    /**
+     * A missing model asset has been observed to crash the process with a native SIGSEGV inside
+     * [PoseLandmarker.createFromOptions] rather than throwing a catchable error — MediaPipe's
+     * model loader appears to dereference a null/empty buffer instead of reporting "not found".
+     * Failing fast here with an ordinary exception lets [setup]/[fallBackToCpu]'s existing
+     * try/catch handle it gracefully instead.
+     */
+    private fun assertModelAssetExists(assetPath: String) {
+        try {
+            context.assets.open(assetPath).close()
+        } catch (e: IOException) {
+            throw IllegalStateException(
+                "Model asset not found: \"$assetPath\". Run scripts/download_models.sh and " +
+                    "confirm the .task files are under core-pose/src/main/assets/models/.",
+                e,
+            )
+        }
     }
 
     private fun fallBackToCpu() {

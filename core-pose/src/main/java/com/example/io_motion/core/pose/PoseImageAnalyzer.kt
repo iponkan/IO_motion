@@ -20,16 +20,17 @@ import com.google.mediapipe.framework.image.BitmapImageBuilder
  * `planes[0].rowStride` is not always `width * pixelStride` — some devices pad each row to an
  * alignment boundary — so [analyze] decodes into the padded width and crops rather than
  * assuming a tightly packed buffer, which would otherwise skew the image diagonally.
+ *
+ * A fresh [Bitmap] is allocated for every frame handed to [BitmapImageBuilder] — it must not be
+ * reused across calls. `BitmapImageBuilder` wraps the [Bitmap] *by reference*, and MediaPipe's
+ * `LIVE_STREAM` graph converts it to its internal image format on its own thread, which can run
+ * after `detectAsync` returns. Reusing the same `Bitmap` object for the next frame would let
+ * `copyPixelsFromBuffer` overwrite pixels MediaPipe is still reading, corrupting memory (this
+ * previously caused a native SIGSEGV within the first few frames of opening the Live screen).
  */
 internal class PoseImageAnalyzer(
     private val landmarkerHelperProvider: () -> PoseLandmarkerHelper?,
 ) : ImageAnalysis.Analyzer {
-
-    // Reused across frames instead of allocating a fresh ~30 times/sec; only reallocated when
-    // the camera's output dimensions change. Safe to overwrite on the next frame because
-    // detectAsync() copies pixel data into MediaPipe's own input packet synchronously, before
-    // this call returns — the async part is the inference callback, not the packet creation.
-    private var scratchBitmap: Bitmap? = null
 
     override fun analyze(imageProxy: ImageProxy) {
         val landmarkerHelper = landmarkerHelperProvider()
@@ -44,17 +45,17 @@ internal class PoseImageAnalyzer(
         val rowPaddingBytes = rowStride - pixelStride * imageProxy.width
 
         val bitmapBuffer = if (rowPaddingBytes == 0) {
-            obtainScratchBitmap(imageProxy.width, imageProxy.height).also {
+            Bitmap.createBitmap(imageProxy.width, imageProxy.height, Bitmap.Config.ARGB_8888).also {
                 it.copyPixelsFromBuffer(plane.buffer)
             }
         } else {
             // rowStride includes padding: decode into a bitmap wide enough for the padded rows,
             // then crop to the true image width so downstream consumers never see the padding.
             val paddedWidth = rowStride / pixelStride
-            val padded = obtainScratchBitmap(paddedWidth, imageProxy.height).also {
+            val padded = Bitmap.createBitmap(paddedWidth, imageProxy.height, Bitmap.Config.ARGB_8888).also {
                 it.copyPixelsFromBuffer(plane.buffer)
             }
-            Bitmap.createBitmap(padded, 0, 0, imageProxy.width, imageProxy.height)
+            Bitmap.createBitmap(padded, 0, 0, imageProxy.width, imageProxy.height).also { padded.recycle() }
         }
 
         val rotationDegrees = imageProxy.imageInfo.rotationDegrees
@@ -65,7 +66,7 @@ internal class PoseImageAnalyzer(
                 bitmapBuffer, 0, 0, bitmapBuffer.width, bitmapBuffer.height,
                 Matrix().apply { postRotate(rotationDegrees.toFloat()) },
                 true,
-            )
+            ).also { bitmapBuffer.recycle() }
         } else {
             bitmapBuffer
         }
@@ -73,13 +74,5 @@ internal class PoseImageAnalyzer(
         val mpImage = BitmapImageBuilder(finalBitmap).build()
         // Monotonically increasing timestamp in ms for LIVE_STREAM mode.
         landmarkerHelper.detectAsync(mpImage, SystemClock.uptimeMillis())
-    }
-
-    private fun obtainScratchBitmap(width: Int, height: Int): Bitmap {
-        val existing = scratchBitmap
-        if (existing != null && existing.width == width && existing.height == height) {
-            return existing
-        }
-        return Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888).also { scratchBitmap = it }
     }
 }
