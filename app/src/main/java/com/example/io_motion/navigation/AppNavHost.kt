@@ -10,21 +10,22 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
-import com.example.io_motion.core.common.models.ThemeMode
 import com.example.io_motion.core.common.util.parseEnumOrDefault
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.feature.history.HistoryScreen
 import com.example.io_motion.feature.history.SessionReportScreen
 import com.example.io_motion.feature.live.HomeScreen
 import com.example.io_motion.feature.live.LiveScreen
+import com.example.io_motion.feature.live.settings.SettingsScreen
 import com.example.io_motion.feature.video.VideoScreen
 
 private object Routes {
-    const val HOME    = "home"
-    const val LIVE    = "live/{exerciseType}/{modelVariant}"
-    const val VIDEO   = "video/{exerciseType}/{modelVariant}"
-    const val HISTORY = "history"
-    const val REPORT  = "report/{sessionId}"
+    const val HOME     = "home"
+    const val LIVE     = "live/{exerciseType}/{modelVariant}"
+    const val VIDEO    = "video/{exerciseType}/{modelVariant}"
+    const val HISTORY  = "history"
+    const val REPORT   = "report/{sessionId}"
+    const val SETTINGS = "settings"
 
     fun live(exerciseType: ExerciseType, modelVariant: PoseModelVariant) =
         "live/${exerciseType.name}/${modelVariant.name}"
@@ -39,8 +40,6 @@ private object Routes {
 fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    themeMode: ThemeMode = ThemeMode.DARK,
-    onToggleTheme: () -> Unit = {},
 ) {
     NavHost(
         navController = navController,
@@ -56,9 +55,12 @@ fun AppNavHost(
                     }
                 },
                 onOpenHistory = { navController.navigate(Routes.HISTORY) },
-                themeMode = themeMode,
-                onToggleTheme = onToggleTheme,
+                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
             )
+        }
+
+        composable(Routes.SETTINGS) {
+            SettingsScreen(onNavigateBack = { navController.popBackStack() })
         }
 
         composable(

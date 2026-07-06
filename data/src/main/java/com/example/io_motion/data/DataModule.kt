@@ -7,10 +7,10 @@ import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.example.io_motion.data.dao.SessionDao
 import com.example.io_motion.data.di.ApplicationScope
-import com.example.io_motion.data.preferences.ThemePreferences
+import com.example.io_motion.data.preferences.SettingsPreferences
 import com.example.io_motion.data.repository.SessionRepository
 import com.example.io_motion.data.repository.SessionRepositoryImpl
-import com.example.io_motion.data.repository.ThemeRepository
+import com.example.io_motion.data.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -22,7 +22,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import javax.inject.Singleton
 
-private val Context.themeDataStore: DataStore<Preferences> by preferencesDataStore(name = "theme_prefs")
+// File name kept as "theme_prefs" (predates the accent/model-variant additions) so existing
+// persisted preferences aren't lost on upgrade.
+private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = "theme_prefs")
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -34,13 +36,13 @@ abstract class DataModule {
 
     @Binds
     @Singleton
-    abstract fun bindThemeRepository(impl: ThemePreferences): ThemeRepository
+    abstract fun bindSettingsRepository(impl: SettingsPreferences): SettingsRepository
 
     companion object {
         @Provides
         @Singleton
-        fun provideThemeDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
-            context.themeDataStore
+        fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+            context.settingsDataStore
 
         @Provides
         @Singleton

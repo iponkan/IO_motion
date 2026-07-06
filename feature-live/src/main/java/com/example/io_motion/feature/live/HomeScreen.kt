@@ -4,16 +4,12 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -24,17 +20,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Check
-import androidx.compose.material.icons.outlined.DarkMode
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.WbSunny
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,12 +41,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
-import com.example.io_motion.core.common.models.ThemeMode
 import com.example.io_motion.core.common.models.displayName
 import com.example.io_motion.core.pose.model.PoseModelVariant
-import com.example.io_motion.core.ui.theme.Accent
+import com.example.io_motion.core.ui.components.SectionLabel
+import com.example.io_motion.core.ui.components.SegmentedControl
 import com.example.io_motion.core.ui.theme.CutCorner
 import com.example.io_motion.core.ui.theme.IOMotionTextStyles
 import com.example.io_motion.core.ui.theme.LocalCutCornerEnabled
@@ -60,14 +58,15 @@ import com.example.io_motion.core.ui.theme.extendedColors
 fun HomeScreen(
     onStart: (ExerciseType, PoseModelVariant, AnalysisMode) -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
-    themeMode: ThemeMode = ThemeMode.DARK,
-    onToggleTheme: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
     var selectedExercise by remember { mutableStateOf(ExerciseType.SQUAT) }
-    var selectedModel by remember { mutableStateOf(PoseModelVariant.FULL) }
     var selectedMode by remember { mutableStateOf(AnalysisMode.LIVE) }
+    val modelVariant by viewModel.modelVariant.collectAsState()
     val cutCornerEnabled = LocalCutCornerEnabled.current
+    val accent = MaterialTheme.colorScheme.primary
 
     Column(
         modifier = modifier
@@ -78,7 +77,7 @@ fun HomeScreen(
             .padding(horizontal = 22.dp)
             .padding(top = 20.dp, bottom = 40.dp),
     ) {
-        // ── Wordmark + theme/history controls ───────────────────────────────
+        // ── Wordmark + history/settings controls ────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -86,7 +85,7 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.graphicsLayer { rotationZ = -4f }) {
                 Row {
-                    Text(text = "IO", style = IOMotionTextStyles.wordmark, color = Accent)
+                    Text(text = "IO", style = IOMotionTextStyles.wordmark, color = accent)
                     Text(text = "Motion", style = IOMotionTextStyles.wordmark, color = MaterialTheme.colorScheme.onBackground)
                 }
                 Text(
@@ -100,23 +99,19 @@ fun HomeScreen(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .clickable(onClick = onToggleTheme),
+                        .clickable(onClick = onOpenHistory),
                     contentAlignment = Alignment.Center,
                 ) {
-                    val (icon, description) = when (themeMode) {
-                        ThemeMode.DARK  -> Icons.Outlined.WbSunny to "Switch to light theme"
-                        ThemeMode.LIGHT -> Icons.Outlined.DarkMode to "Switch to dark theme"
-                    }
-                    Icon(imageVector = icon, contentDescription = description, tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(imageVector = Icons.Outlined.History, contentDescription = "Session history", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 Box(
                     modifier = Modifier
                         .size(36.dp)
                         .clip(CircleShape)
-                        .clickable(onClick = onOpenHistory),
+                        .clickable(onClick = onOpenSettings),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(imageVector = Icons.Outlined.History, contentDescription = "Session history", tint = MaterialTheme.colorScheme.onBackground)
+                    Icon(imageVector = Icons.Outlined.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
                 }
             }
         }
@@ -142,25 +137,6 @@ fun HomeScreen(
             options = listOf("Live Camera", "Video File"),
             selectedIndex = if (selectedMode == AnalysisMode.LIVE) 0 else 1,
             onSelect = { index -> selectedMode = if (index == 0) AnalysisMode.LIVE else AnalysisMode.OFFLINE },
-            cutCornerEnabled = cutCornerEnabled,
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // ── Model variant ─────────────────────────────────────────────────────
-        SectionLabel(text = "MODEL VARIANT")
-        Spacer(modifier = Modifier.height(14.dp))
-        Text(
-            text = "Lite: fastest · Full: balanced · Heavy: most accurate",
-            style = IOMotionTextStyles.modelVariantCaption,
-            color = MaterialTheme.extendedColors.textMuted,
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        SegmentedControl(
-            options = PoseModelVariant.entries.map { it.displayName },
-            selectedIndex = PoseModelVariant.entries.indexOf(selectedModel),
-            onSelect = { index -> selectedModel = PoseModelVariant.entries[index] },
-            cutCornerEnabled = cutCornerEnabled,
         )
 
         Spacer(modifier = Modifier.height(36.dp))
@@ -170,8 +146,8 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(58.dp)
-                .background(Accent, cutCornerShape(CutCorner.ctaButton, cutCornerEnabled))
-                .clickable { onStart(selectedExercise, selectedModel, selectedMode) },
+                .background(accent, cutCornerShape(CutCorner.ctaButton, cutCornerEnabled))
+                .clickable { onStart(selectedExercise, modelVariant, selectedMode) },
             contentAlignment = Alignment.Center,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -195,23 +171,6 @@ fun HomeScreen(
     }
 }
 
-@Composable
-private fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(5.dp)
-                .background(Accent),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Text(
-            text = text,
-            style = IOMotionTextStyles.sectionLabel,
-            color = MaterialTheme.extendedColors.textMuted,
-        )
-    }
-}
-
 /**
  * Vertical exercise picker whose selection highlight slides between rows, the same way the
  * segmented-control indicator slides between options, instead of instantly swapping colors.
@@ -226,6 +185,7 @@ private fun ExerciseList(
 ) {
     val rowHeight = 64.dp
     val selectedIndex = exercises.indexOf(selected)
+    val accent = MaterialTheme.colorScheme.primary
     val indicatorOffset by animateDpAsState(
         targetValue = rowHeight * selectedIndex,
         animationSpec = tween(250),
@@ -238,7 +198,7 @@ private fun ExerciseList(
                 .fillMaxWidth()
                 .height(rowHeight)
                 .offset(y = indicatorOffset)
-                .background(Accent, cutCornerShape(CutCorner.selectedRow, cutCornerEnabled)),
+                .background(accent, cutCornerShape(CutCorner.selectedRow, cutCornerEnabled)),
         )
         Column {
             exercises.forEachIndexed { index, exercise ->
@@ -295,54 +255,6 @@ private fun ExerciseRow(
                     .height(1.dp)
                     .background(MaterialTheme.extendedColors.hairline),
             )
-        }
-    }
-}
-
-@Composable
-private fun SegmentedControl(
-    options: List<String>,
-    selectedIndex: Int,
-    onSelect: (Int) -> Unit,
-    cutCornerEnabled: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    BoxWithConstraints(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .border(1.dp, MaterialTheme.extendedColors.segmentedTrackBorder),
-    ) {
-        val segmentWidth = maxWidth / options.size
-        val indicatorOffset by animateDpAsState(
-            targetValue = segmentWidth * selectedIndex,
-            animationSpec = tween(250),
-            label = "segmentIndicatorOffset",
-        )
-        Box(
-            modifier = Modifier
-                .offset(x = indicatorOffset)
-                .width(segmentWidth)
-                .fillMaxHeight()
-                .background(Accent, cutCornerShape(CutCorner.segmentedIndicator, cutCornerEnabled)),
-        )
-        Row(modifier = Modifier.fillMaxSize()) {
-            options.forEachIndexed { index, label ->
-                val active = index == selectedIndex
-                val labelColor by animateColorAsState(
-                    targetValue = if (active) MaterialTheme.extendedColors.accentOn else MaterialTheme.extendedColors.textMuted,
-                    label = "segmentLabelColor",
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clickable { onSelect(index) },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(text = label, style = IOMotionTextStyles.segmentedLabel, color = labelColor)
-                }
-            }
         }
     }
 }

@@ -35,7 +35,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.common.models.displayName
 import com.example.io_motion.core.common.models.metaLabel
-import com.example.io_motion.core.ui.theme.Accent
 import com.example.io_motion.core.ui.theme.IOMotionTextStyles
 import com.example.io_motion.core.ui.theme.extendedColors
 import com.example.io_motion.core.ui.theme.scoreColor
@@ -73,7 +72,7 @@ fun HistoryScreen(
 
         when {
             uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Accent)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
             uiState.sessions.isEmpty() -> EmptyState(Modifier.fillMaxSize())
             else -> LazyColumn(

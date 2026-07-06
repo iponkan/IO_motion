@@ -42,7 +42,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.common.models.displayName
 import com.example.io_motion.core.common.models.metaLabel
-import com.example.io_motion.core.ui.theme.Accent
 import com.example.io_motion.core.ui.theme.CutCorner
 import com.example.io_motion.core.ui.theme.IOMotionTextStyles
 import com.example.io_motion.core.ui.theme.LocalCutCornerEnabled
@@ -98,7 +97,7 @@ fun SessionReportScreen(
 
         when {
             uiState.isLoading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Accent)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
             uiState.record == null -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text("Session not found.", color = MaterialTheme.extendedColors.textMuted)
@@ -324,7 +323,7 @@ private fun RepRow(
             Text(
                 text = "#$repNumber",
                 style = IOMotionTextStyles.repTag,
-                color = Accent,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.width(36.dp),
             )
             Column(modifier = Modifier.weight(1f)) {

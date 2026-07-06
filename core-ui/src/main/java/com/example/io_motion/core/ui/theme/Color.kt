@@ -1,6 +1,7 @@
 package com.example.io_motion.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import com.example.io_motion.core.common.models.AccentTheme
 
 // ── Design tokens — dark theme (doc/CLAUDE_CODE_PROMPT_DESIGN.md) ──────────────
 val BackgroundDark = Color(0xFF141109)
@@ -22,9 +23,26 @@ const val HairlineLightAlpha = 0.12f
 val SegmentedTrackBorderLight = Color(0xFF1B1610)
 const val SegmentedTrackBorderLightAlpha = 0.16f
 
-// ── Accent — single theme-level token, same in both themes ─────────────────────
-val Accent = Color(0xFF2F6BFF)
-val AccentOn = Color(0xFFFBF6ED)
+// ── Accent — user-selectable, same across both themes ───────────────────────────
+val AccentBlue = Color(0xFF2F6BFF)
+val AccentOrange = Color(0xFFFF5A1F)
+val AccentLime = Color(0xFFC6FF3D)
+
+// "Accent-on" contrast rule: luminance = (0.299r + 0.587g + 0.114b)/255; >0.62 -> dark ink, else light.
+val LightOnAccent = Color(0xFFFBF6ED)
+val DarkInkOnAccent = Color(0xFF161109)
+
+fun AccentTheme.toColor(): Color = when (this) {
+    AccentTheme.BLUE   -> AccentBlue
+    AccentTheme.ORANGE -> AccentOrange
+    AccentTheme.LIME   -> AccentLime
+}
+
+/** Accent-on contrast rule: luminance = (0.299r + 0.587g + 0.114b)/255; >0.62 -> dark ink, else light. */
+fun accentOnColorFor(accent: Color): Color {
+    val luminance = (0.299f * accent.red * 255f + 0.587f * accent.green * 255f + 0.114f * accent.blue * 255f) / 255f
+    return if (luminance > 0.62f) DarkInkOnAccent else LightOnAccent
+}
 
 // ── Score-color rule (ring, per-rep scores, history quality numbers) ────────────
 val SuccessDark = Color(0xFF5EE38A)

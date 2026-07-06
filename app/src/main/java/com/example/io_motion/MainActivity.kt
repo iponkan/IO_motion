@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val mainViewModel: MainViewModel = hiltViewModel()
             val themeMode by mainViewModel.themeMode.collectAsState()
+            val accentTheme by mainViewModel.accentTheme.collectAsState()
             val darkTheme = themeMode == ThemeMode.DARK
 
             // In-app Light/Dark overrides must re-color the system bar icons too — the system
@@ -35,11 +36,8 @@ class MainActivity : ComponentActivity() {
                 controller.isAppearanceLightNavigationBars = !darkTheme
             }
 
-            IO_motionTheme(themeMode = themeMode) {
-                AppNavHost(
-                    themeMode = themeMode,
-                    onToggleTheme = mainViewModel::toggleThemeMode,
-                )
+            IO_motionTheme(themeMode = themeMode, accentTheme = accentTheme) {
+                AppNavHost()
             }
         }
     }

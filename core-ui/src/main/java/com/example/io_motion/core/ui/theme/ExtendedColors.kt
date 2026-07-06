@@ -20,12 +20,14 @@ data class ExtendedColors(
     val danger: Color,
 )
 
+// accentOn is overridden per the current AccentTheme by IO_motionTheme (see Theme.kt); the
+// value here is just a sensible default for previews/tests that don't go through that path.
 val LightExtendedColors = ExtendedColors(
     textMuted = TextMutedLight,
     textMutedSecondary = TextMutedSecondaryLight,
     hairline = HairlineLight.copy(alpha = HairlineLightAlpha),
     segmentedTrackBorder = SegmentedTrackBorderLight.copy(alpha = SegmentedTrackBorderLightAlpha),
-    accentOn = AccentOn,
+    accentOn = LightOnAccent,
     success = SuccessLight,
     warning = WarningLight,
     danger = DangerLight,
@@ -36,7 +38,7 @@ val DarkExtendedColors = ExtendedColors(
     textMutedSecondary = TextMutedSecondaryDark,
     hairline = HairlineDark.copy(alpha = HairlineDarkAlpha),
     segmentedTrackBorder = SegmentedTrackBorderDark.copy(alpha = SegmentedTrackBorderDarkAlpha),
-    accentOn = AccentOn,
+    accentOn = LightOnAccent,
     success = SuccessDark,
     warning = WarningDark,
     danger = DangerDark,
