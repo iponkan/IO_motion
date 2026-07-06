@@ -14,3 +14,10 @@ captures/
 .cxx
 local.properties
 /doc
+/app/release/
+/app/build/
+/build/
+*.apk
+*.aab
+local.properties
+.gradle/

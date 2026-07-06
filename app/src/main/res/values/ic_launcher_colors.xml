@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared across all 3 accent launcher-icon variants (icons/*-glyph.svg) -->
+    <color name="ic_launcher_background">#141109</color>
+    <color name="ic_launcher_dot">#F6EFE3</color>
+
+    <color name="ic_launcher_accent_blue">#2F6BFF</color>
+    <color name="ic_launcher_accent_orange">#FF5A1F</color>
+    <color name="ic_launcher_accent_lime">#C6FF3D</color>
+</resources>

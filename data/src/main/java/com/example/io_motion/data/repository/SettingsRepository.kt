@@ -19,4 +19,13 @@ interface SettingsRepository {
     val defaultModelVariant: Flow<String>
 
     suspend fun setDefaultModelVariant(variant: String)
+
+    /**
+     * Applies the persisted [accentTheme] to the launcher icon (enables the matching
+     * `activity-alias`, disables the other two). Callers must only invoke this while the app is
+     * backgrounded — disabling the alias that launched the currently-foregrounded task kills it
+     * immediately, regardless of [android.content.pm.PackageManager.DONT_KILL_APP]. See
+     * `MainActivity`'s `onStop`-triggered call site.
+     */
+    fun syncLauncherIcon()
 }

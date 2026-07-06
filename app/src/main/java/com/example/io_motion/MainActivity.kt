@@ -4,12 +4,16 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.example.io_motion.core.common.models.ThemeMode
 import com.example.io_motion.core.ui.theme.IO_motionTheme
 import com.example.io_motion.navigation.AppNavHost
@@ -34,6 +38,21 @@ class MainActivity : ComponentActivity() {
                 val controller = WindowCompat.getInsetsController(window, view)
                 controller.isAppearanceLightStatusBars = !darkTheme
                 controller.isAppearanceLightNavigationBars = !darkTheme
+            }
+
+            // The launcher-icon swap (activity-alias enable/disable) must not run while this
+            // task is foregrounded — disabling the alias that launched it kills the app
+            // immediately (see SettingsRepository.syncLauncherIcon kdoc). ON_STOP is the first
+            // point at which the app is reliably backgrounded.
+            val lifecycleOwner = LocalLifecycleOwner.current
+            DisposableEffect(lifecycleOwner, mainViewModel) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_STOP) {
+                        mainViewModel.syncLauncherIcon()
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
             }
 
             IO_motionTheme(themeMode = themeMode, accentTheme = accentTheme) {

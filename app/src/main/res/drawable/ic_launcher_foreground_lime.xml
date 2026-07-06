@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Glyph-only layer for the adaptive launcher icon (Lime accent). Converted from icons/lime-glyph.svg;
+     background is supplied separately by @color/ic_launcher_background in the adaptive-icon XML. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="512dp"
+    android:height="512dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+
+    <path
+        android:strokeColor="@color/ic_launcher_accent_lime"
+        android:strokeWidth="16.29"
+        android:strokeLineCap="round"
+        android:pathData="M256,181.53 L256,258.33" />
+    <path
+        android:strokeColor="@color/ic_launcher_accent_lime"
+        android:strokeWidth="16.29"
+        android:strokeLineCap="round"
+        android:pathData="M256,258.33 L183.85,225.75" />
+    <path
+        android:strokeColor="@color/ic_launcher_accent_lime"
+        android:strokeWidth="16.29"
+        android:strokeLineCap="round"
+        android:pathData="M256,258.33 L332.8,290.91" />
+    <path
+        android:strokeColor="@color/ic_launcher_accent_lime"
+        android:strokeWidth="16.29"
+        android:strokeLineCap="round"
+        android:pathData="M256,258.33 L202.47,351.41" />
+    <path
+        android:strokeColor="@color/ic_launcher_accent_lime"
+        android:strokeWidth="16.29"
+        android:strokeLineCap="round"
+        android:pathData="M256,258.33 L309.53,365.38" />
+
+    <path
+        android:fillColor="@color/ic_launcher_accent_lime"
+        android:pathData="M235.05,160.58 a20.95,20.95 0 1,0 41.9,0 a20.95,20.95 0 1,0 -41.9,0" />
+
+    <path
+        android:fillColor="@color/ic_launcher_dot"
+        android:pathData="M169.89,225.75 a13.96,13.96 0 1,0 27.92,0 a13.96,13.96 0 1,0 -27.92,0" />
+    <path
+        android:fillColor="@color/ic_launcher_dot"
+        android:pathData="M318.84,290.91 a13.96,13.96 0 1,0 27.92,0 a13.96,13.96 0 1,0 -27.92,0" />
+    <path
+        android:fillColor="@color/ic_launcher_dot"
+        android:pathData="M188.51,351.41 a13.96,13.96 0 1,0 27.92,0 a13.96,13.96 0 1,0 -27.92,0" />
+    <path
+        android:fillColor="@color/ic_launcher_dot"
+        android:pathData="M295.57,365.38 a13.96,13.96 0 1,0 27.92,0 a13.96,13.96 0 1,0 -27.92,0" />
+    <path
+        android:fillColor="@color/ic_launcher_dot"
+        android:pathData="M239.71,258.33 a16.29,16.29 0 1,0 32.58,0 a16.29,16.29 0 1,0 -32.58,0" />
+</vector>

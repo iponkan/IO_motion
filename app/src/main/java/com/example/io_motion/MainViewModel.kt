@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    settingsRepository: SettingsRepository,
+    private val settingsRepository: SettingsRepository,
 ) : ViewModel() {
 
     val themeMode: StateFlow<ThemeMode> = settingsRepository.themeMode.stateIn(
@@ -27,4 +27,9 @@ class MainViewModel @Inject constructor(
         started = SharingStarted.Eagerly,
         initialValue = AccentTheme.BLUE,
     )
+
+    /** Called when the app is backgrounded (MainActivity onStop) — see SettingsRepository kdoc for why. */
+    fun syncLauncherIcon() {
+        settingsRepository.syncLauncherIcon()
+    }
 }
