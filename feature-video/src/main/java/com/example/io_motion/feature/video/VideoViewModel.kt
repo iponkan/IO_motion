@@ -12,19 +12,23 @@ import com.example.io_motion.core.pose.VideoAnalysisSession
 import com.example.io_motion.core.pose.config.PoseLandmarkerConfig
 import com.example.io_motion.core.pose.model.PoseModelVariant
 import com.example.io_motion.data.repository.SessionRepository
+import com.example.io_motion.feature.video.gallery.DeviceVideoRepository
 import com.example.io_motion.feature.video.model.VideoUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @HiltViewModel
 class VideoViewModel @Inject constructor(
     private val videoAnalysisSession: VideoAnalysisSession,
     private val sessionRepository: SessionRepository,
+    private val deviceVideoRepository: DeviceVideoRepository,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -36,6 +40,23 @@ class VideoViewModel @Inject constructor(
     private val exerciseType = parseEnumOrDefault(savedStateHandle["exerciseType"], ExerciseType.SQUAT)
     private val modelVariant = parseEnumOrDefault(savedStateHandle["modelVariant"], PoseModelVariant.FULL)
     private var processingJob: Job? = null
+    private var galleryLoadJob: Job? = null
+
+    /** Loads the on-device video gallery. Call once permission has been granted. */
+    fun openGallery() {
+        galleryLoadJob?.cancel()
+        _uiState.value = VideoUiState.Gallery(videos = emptyList(), isLoading = true)
+        galleryLoadJob = viewModelScope.launch {
+            val videos = withContext(Dispatchers.IO) { deviceVideoRepository.queryVideos() }
+            _uiState.value = VideoUiState.Gallery(videos = videos, isLoading = false)
+        }
+    }
+
+    fun closeGallery() {
+        galleryLoadJob?.cancel()
+        galleryLoadJob = null
+        _uiState.value = VideoUiState.Idle
+    }
 
     fun processVideo(uri: Uri) {
         processingJob?.cancel()

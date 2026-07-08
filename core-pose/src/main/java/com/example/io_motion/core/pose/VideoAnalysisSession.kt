@@ -77,7 +77,7 @@ class VideoAnalysisSession @Inject constructor(
                     timestampMs * 1_000L, // ms → µs
                     MediaMetadataRetriever.OPTION_CLOSEST,
                 )
-                val bitmap = rawBitmap?.scaleIfNeeded()
+                val bitmap = rawBitmap?.ensureArgb8888()?.scaleIfNeeded()
 
                 val poseFrame: PoseFrame? = if (bitmap != null) {
                     val mpImage = BitmapImageBuilder(bitmap).build()
@@ -108,6 +108,11 @@ class VideoAnalysisSession @Inject constructor(
             retriever.release()
         }
     }.flowOn(Dispatchers.Default)
+
+    // MediaMetadataRetriever.getFrameAtTime's bitmap config depends on the device/codec (often
+    // RGB_565), but MediaPipe's BitmapImageBuilder requires ARGB_8888.
+    private fun Bitmap.ensureArgb8888(): Bitmap =
+        if (config == Bitmap.Config.ARGB_8888) this else copy(Bitmap.Config.ARGB_8888, false)
 
     private fun Bitmap.scaleIfNeeded(): Bitmap {
         if (width <= MAX_BITMAP_DIM && height <= MAX_BITMAP_DIM) return this
