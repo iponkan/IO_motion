@@ -22,6 +22,11 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    // Exposes the exported Room schemas to MigrationTestHelper (it reads them from androidTest assets).
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
 }
 
 // Room writes a JSON snapshot of the schema here on every build (see AppDatabase.exportSchema).
@@ -42,4 +47,7 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.room.testing)
 }

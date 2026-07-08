@@ -20,6 +20,16 @@ interface SettingsRepository {
 
     suspend fun setDefaultModelVariant(variant: String)
 
+    /** Daily calorie target for Diet Planning; config (not hardcoded UI), default 2200 kcal. */
+    val calorieTarget: Flow<Int>
+
+    suspend fun setCalorieTarget(kcal: Int)
+
+    /** Daily water target in cups for Diet Planning; config, default 8 cups. */
+    val waterTargetCups: Flow<Int>
+
+    suspend fun setWaterTargetCups(cups: Int)
+
     /**
      * Applies the persisted [accentTheme] to the launcher icon (enables the matching
      * `activity-alias`, disables the other two). Callers must only invoke this while the app is

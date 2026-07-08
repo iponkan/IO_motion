@@ -5,12 +5,18 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
+import com.example.io_motion.data.dao.DietDao
 import com.example.io_motion.data.dao.SessionDao
+import com.example.io_motion.data.dao.WorkoutDao
 import com.example.io_motion.data.di.ApplicationScope
 import com.example.io_motion.data.preferences.SettingsPreferences
+import com.example.io_motion.data.repository.DietRepository
+import com.example.io_motion.data.repository.DietRepositoryImpl
 import com.example.io_motion.data.repository.SessionRepository
 import com.example.io_motion.data.repository.SessionRepositoryImpl
 import com.example.io_motion.data.repository.SettingsRepository
+import com.example.io_motion.data.repository.WorkoutRepository
+import com.example.io_motion.data.repository.WorkoutRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -38,6 +44,14 @@ abstract class DataModule {
     @Singleton
     abstract fun bindSettingsRepository(impl: SettingsPreferences): SettingsRepository
 
+    @Binds
+    @Singleton
+    abstract fun bindWorkoutRepository(impl: WorkoutRepositoryImpl): WorkoutRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindDietRepository(impl: DietRepositoryImpl): DietRepository
+
     companion object {
         @Provides
         @Singleton
@@ -48,16 +62,22 @@ abstract class DataModule {
         @Singleton
         fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase =
             Room.databaseBuilder(context, AppDatabase::class.java, "io_motion.db")
-                // Safe only because AppDatabase.version has never changed (there is no prior
-                // released schema to migrate from). The moment version is bumped, this must be
-                // replaced with an explicit addMigrations(...) — see AppDatabase's kdoc — or it
-                // will silently wipe every user's session history on upgrade.
-                .fallbackToDestructiveMigration()
+                // No destructive fallback: session history must survive schema bumps. Every
+                // version increase ships an explicit Migration registered here (see MIGRATION_1_2).
+                .addMigrations(MIGRATION_1_2)
                 .build()
 
         @Provides
         @Singleton
         fun provideSessionDao(db: AppDatabase): SessionDao = db.sessionDao()
+
+        @Provides
+        @Singleton
+        fun provideWorkoutDao(db: AppDatabase): WorkoutDao = db.workoutDao()
+
+        @Provides
+        @Singleton
+        fun provideDietDao(db: AppDatabase): DietDao = db.dietDao()
 
         /**
          * Process-lifetime scope for persistence writes. [SupervisorJob] means one failed write

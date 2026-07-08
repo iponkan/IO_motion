@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.io_motion.core.common.models.AccentTheme
 import com.example.io_motion.core.common.models.ThemeMode
@@ -21,6 +22,12 @@ import javax.inject.Inject
 private val THEME_MODE_KEY = stringPreferencesKey("theme_mode")
 private val ACCENT_THEME_KEY = stringPreferencesKey("accent_theme")
 private val DEFAULT_MODEL_VARIANT_KEY = stringPreferencesKey("default_model_variant")
+private val CALORIE_TARGET_KEY = intPreferencesKey("calorie_target")
+private val WATER_TARGET_CUPS_KEY = intPreferencesKey("water_target_cups")
+
+// Diet Planning daily-target defaults (design §8). Config, not hardcoded UI strings.
+private const val DEFAULT_CALORIE_TARGET = 2200
+private const val DEFAULT_WATER_TARGET_CUPS = 8
 
 /** `activity-alias` names in AndroidManifest.xml, one per [AccentTheme], each with its own launcher icon. */
 private val LAUNCHER_ALIASES = mapOf(
@@ -62,6 +69,22 @@ class SettingsPreferences @Inject constructor(
 
     override suspend fun setDefaultModelVariant(variant: String) {
         dataStore.edit { prefs -> prefs[DEFAULT_MODEL_VARIANT_KEY] = variant }
+    }
+
+    override val calorieTarget = dataStore.data.map { prefs ->
+        prefs[CALORIE_TARGET_KEY] ?: DEFAULT_CALORIE_TARGET
+    }
+
+    override suspend fun setCalorieTarget(kcal: Int) {
+        dataStore.edit { prefs -> prefs[CALORIE_TARGET_KEY] = kcal }
+    }
+
+    override val waterTargetCups = dataStore.data.map { prefs ->
+        prefs[WATER_TARGET_CUPS_KEY] ?: DEFAULT_WATER_TARGET_CUPS
+    }
+
+    override suspend fun setWaterTargetCups(cups: Int) {
+        dataStore.edit { prefs -> prefs[WATER_TARGET_CUPS_KEY] = cups }
     }
 
     override fun syncLauncherIcon() {
