@@ -39,7 +39,7 @@ class SquatAnalyzer(config: RepAnalyzerConfig = RepAnalyzerConfig.squat) : RepBa
         left?.let { if (it < minLeftKnee) minLeftKnee = it }
         right?.let { if (it < minRightKnee) minRightKnee = it }
 
-        return average(left, right)
+        return deepestSide(left, right)
     }
 
     override fun buildRepMetrics(
@@ -84,8 +84,16 @@ class SquatAnalyzer(config: RepAnalyzerConfig = RepAnalyzerConfig.squat) : RepBa
         ).takeIf { !it.isNaN() }
     }
 
-    private fun average(a: Double?, b: Double?) = when {
-        a != null && b != null -> (a + b) / 2.0
+    /**
+     * Uses the more-flexed side rather than the average of both knees. From a side-on camera
+     * angle the far leg is frequently occluded by the near one; MediaPipe still reports it as
+     * visible but estimates its depth poorly, keeping its angle stuck near full extension. Averaging
+     * that stuck value into the near (correctly tracked) leg pulls the combined angle back above
+     * [RepAnalyzerConfig.flexThreshold] and the rep never registers. Per-side minimums are still
+     * tracked separately above for the symmetry score, so uneven form is still flagged.
+     */
+    private fun deepestSide(a: Double?, b: Double?) = when {
+        a != null && b != null -> minOf(a, b)
         a != null -> a
         b != null -> b
         else -> null

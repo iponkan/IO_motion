@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +15,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.io_motion.core.ui.theme.extendedColors
 
@@ -71,9 +73,22 @@ fun MetricGauge(
             }
         }
 
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        // wrapContentSize lets this Column size to its natural (unwrapped) width instead of
+        // being clamped to the 88dp ring — a long label like "SESSION QUALITY" would otherwise
+        // wrap to two lines, turning this into a 3-line block and throwing off the vertical
+        // centering of the score number inside the ring.
+        Column(
+            modifier = Modifier.wrapContentSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Text(text = "$value", style = MaterialTheme.typography.titleLarge, color = contentColor)
-            Text(text = label, style = MaterialTheme.typography.labelSmall, color = contentColor.copy(alpha = 0.7f))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = contentColor.copy(alpha = 0.7f),
+                maxLines = 1,
+                overflow = TextOverflow.Clip,
+            )
         }
     }
 }
