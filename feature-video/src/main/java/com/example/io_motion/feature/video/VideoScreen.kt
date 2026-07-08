@@ -1,8 +1,10 @@
 package com.example.io_motion.feature.video
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -44,13 +46,18 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.common.models.displayName
@@ -72,10 +79,32 @@ fun VideoScreen(
     viewModel: VideoViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    val videoPicker = rememberLauncherForActivityResult(
-        PickVisualMedia()
-    ) { uri -> uri?.let { viewModel.processVideo(it) } }
+    val videoPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Manifest.permission.READ_MEDIA_VIDEO
+    } else {
+        Manifest.permission.READ_EXTERNAL_STORAGE
+    }
+    var permissionDenied by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        permissionDenied = !granted
+        if (granted) viewModel.openGallery()
+    }
+
+    fun requestGalleryAccess() {
+        val alreadyGranted = ContextCompat.checkSelfPermission(context, videoPermission) ==
+            PackageManager.PERMISSION_GRANTED
+        if (alreadyGranted) {
+            permissionDenied = false
+            viewModel.openGallery()
+        } else {
+            permissionLauncher.launch(videoPermission)
+        }
+    }
 
     Surface(modifier = modifier.fillMaxSize()) {
         AnimatedContent(
@@ -83,9 +112,10 @@ fun VideoScreen(
             contentKey = { state ->
                 when (state) {
                     is VideoUiState.Idle       -> 0
-                    is VideoUiState.Processing -> 1
-                    is VideoUiState.Result     -> 2
-                    is VideoUiState.Error      -> 3
+                    is VideoUiState.Gallery    -> 1
+                    is VideoUiState.Processing -> 2
+                    is VideoUiState.Result     -> 3
+                    is VideoUiState.Error      -> 4
                 }
             },
             transitionSpec = {
@@ -99,8 +129,15 @@ fun VideoScreen(
                 is VideoUiState.Idle -> IdleContent(
                     exerciseType = initialExerciseType,
                     modelVariant = initialModelVariant,
-                    onPickVideo = { videoPicker.launch(PickVisualMediaRequest(PickVisualMedia.VideoOnly)) },
+                    permissionDenied = permissionDenied,
+                    onPickVideo = ::requestGalleryAccess,
                     onNavigateBack = onNavigateBack,
+                )
+                is VideoUiState.Gallery -> GalleryContent(
+                    videos = state.videos,
+                    isLoading = state.isLoading,
+                    onVideoSelected = { viewModel.processVideo(it.uri) },
+                    onBack = viewModel::closeGallery,
                 )
                 is VideoUiState.Processing -> ProcessingContent(
                     state = state,
@@ -127,6 +164,7 @@ fun VideoScreen(
 private fun IdleContent(
     exerciseType: ExerciseType,
     modelVariant: PoseModelVariant,
+    permissionDenied: Boolean,
     onPickVideo: () -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -186,6 +224,16 @@ private fun IdleContent(
                 Text(
                     text = "Select Video from Gallery",
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                )
+            }
+            if (permissionDenied) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Video access was denied. Enable it in system Settings to browse " +
+                        "your gallery.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
                 )
             }
         }
