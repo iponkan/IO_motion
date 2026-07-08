@@ -3,8 +3,8 @@ package com.example.io_motion.core.ui.components
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,7 +15,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.io_motion.core.ui.theme.extendedColors
 
@@ -42,10 +42,10 @@ fun MetricGauge(
     }
 
     Box(
-        modifier = modifier.size(88.dp),
+        modifier = modifier.size(GAUGE_DIAMETER),
         contentAlignment = Alignment.Center,
     ) {
-        Canvas(modifier = Modifier.size(88.dp)) {
+        Canvas(modifier = Modifier.size(GAUGE_DIAMETER)) {
             val strokeWidth = 8.dp.toPx()
             val inset = strokeWidth / 2f
             val arcSize = Size(size.width - strokeWidth, size.height - strokeWidth)
@@ -73,12 +73,8 @@ fun MetricGauge(
             }
         }
 
-        // wrapContentSize lets this Column size to its natural (unwrapped) width instead of
-        // being clamped to the 88dp ring — a long label like "SESSION QUALITY" would otherwise
-        // wrap to two lines, turning this into a 3-line block and throwing off the vertical
-        // centering of the score number inside the ring.
         Column(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.padding(horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(text = "$value", style = MaterialTheme.typography.titleLarge, color = contentColor)
@@ -86,9 +82,12 @@ fun MetricGauge(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
                 color = contentColor.copy(alpha = 0.7f),
-                maxLines = 1,
-                overflow = TextOverflow.Clip,
+                textAlign = TextAlign.Center,
             )
         }
     }
 }
+
+// Large enough for a two-word label like "SESSION QUALITY" to fit on one line without
+// spilling past the ring; short labels (e.g. "FORM") just center with extra room to spare.
+private val GAUGE_DIAMETER = 120.dp
