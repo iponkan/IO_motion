@@ -52,6 +52,9 @@ import com.example.io_motion.core.ui.components.MetricGauge
 import com.example.io_motion.core.ui.components.RepCounter
 import com.example.io_motion.core.ui.overlay.SkeletonOverlay
 
+/** How long the "SET COMPLETE" state is shown before returning to the workout runner. */
+private const val SET_COMPLETE_DISPLAY_MS = 1_200L
+
 @Composable
 fun LiveScreen(
     onNavigateBack: () -> Unit,
@@ -73,6 +76,14 @@ fun LiveScreen(
 
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    // Guided run: after the target is hit and SET COMPLETE is shown briefly, return to the runner.
+    LaunchedEffect(uiState.isSetComplete) {
+        if (uiState.isSetComplete) {
+            kotlinx.coroutines.delay(SET_COMPLETE_DISPLAY_MS)
+            onNavigateBack()
+        }
     }
 
     Box(modifier = modifier.fillMaxSize().background(Color.Black)) {
@@ -120,6 +131,7 @@ fun LiveScreen(
 
         // ── Center state overlay ───────────────────────────────────────────────
         val overlayMessage: String? = when {
+            uiState.isSetComplete -> "SET COMPLETE"
             !hasCameraPermission -> "Camera permission required"
             uiState.fatalErrorMessage != null -> uiState.fatalErrorMessage
             !uiState.isSessionActive -> "Tap Start Session to begin"
@@ -174,12 +186,19 @@ fun LiveScreen(
             ) {
                 when (val s = uiState.analyzerState) {
                     is AnalyzerState.Tracking -> {
-                        RepCounter(repCount = s.repCount, contentColor = Color.White)
+                        RepCounter(
+                            repCount = s.repCount,
+                            contentColor = Color.White,
+                            target = if (uiState.hasTarget) uiState.target else null,
+                        )
                         AngleReadout(angle = s.primaryAngle, label = "ANGLE")
                         MetricGauge(value = uiState.liveFormScore, label = "FORM", contentColor = Color.White)
                     }
                     is AnalyzerState.HoldTracking -> {
-                        HoldDuration(validHoldMs = s.validHoldMs)
+                        HoldDuration(
+                            validHoldMs = s.validHoldMs,
+                            targetSec = if (uiState.hasTarget) uiState.target else null,
+                        )
                         AngleReadout(angle = s.bodyLineAngle, label = "BODY LINE")
                         MetricGauge(value = uiState.liveFormScore, label = "FORM", contentColor = Color.White)
                     }
@@ -189,7 +208,14 @@ fun LiveScreen(
 
             Button(
                 onClick = {
-                    if (uiState.isSessionActive) viewModel.stopSession() else viewModel.startSession()
+                    if (uiState.isSessionActive) {
+                        viewModel.stopSession()
+                        // In a guided run a manual stop saves the (partial) set and returns to the
+                        // runner, mirroring the auto-stop path; the runner observes the saved session.
+                        if (uiState.isWorkoutRun) onNavigateBack()
+                    } else {
+                        viewModel.startSession()
+                    }
                 },
                 modifier = Modifier.fillMaxWidth().height(52.dp),
                 colors = ButtonDefaults.buttonColors(
@@ -221,7 +247,7 @@ private fun AngleReadout(angle: Double, label: String) {
 }
 
 @Composable
-private fun HoldDuration(validHoldMs: Long) {
+private fun HoldDuration(validHoldMs: Long, targetSec: Int? = null) {
     val totalSeconds = validHoldMs / 1_000L
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = "HOLD", style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.7f))
@@ -230,6 +256,13 @@ private fun HoldDuration(validHoldMs: Long) {
             style = MaterialTheme.typography.displaySmall.copy(fontWeight = FontWeight.Bold),
             color = Color.White,
         )
+        if (targetSec != null) {
+            Text(
+                text = "TARGET ${targetSec}s",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.7f),
+            )
+        }
     }
 }
 

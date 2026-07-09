@@ -24,4 +24,21 @@ data class LiveUiState(
      * to initialize on both GPU and CPU delegates). Null when there is no active error.
      */
     val fatalErrorMessage: String? = null,
-)
+    /**
+     * Guided-run target for this set: reps for rep-based exercises, hold-seconds for plank.
+     * [NO_TARGET] when this is a normal (non-guided) session, in which case the counter is untargeted
+     * and there is no auto-stop.
+     */
+    val target: Int = NO_TARGET,
+    /** True when launched from the workout runner — enables auto-stop and the return-to-runner flow. */
+    val isWorkoutRun: Boolean = false,
+    /** Set once the target is reached and the session auto-stopped; drives the brief "SET COMPLETE" state. */
+    val isSetComplete: Boolean = false,
+) {
+    val hasTarget: Boolean get() = target > 0
+
+    companion object {
+        /** Sentinel for "no guided-run target"; matches the live route's default nav-arg value. */
+        const val NO_TARGET = -1
+    }
+}

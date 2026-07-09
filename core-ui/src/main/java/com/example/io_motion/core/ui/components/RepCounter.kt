@@ -17,6 +17,8 @@ fun RepCounter(
     modifier: Modifier = Modifier,
     label: String = "REPS",
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
+    /** When non-null, renders "reps / target" for a guided workout set. */
+    target: Int? = null,
 ) {
     Column(
         modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -28,7 +30,7 @@ fun RepCounter(
             color = contentColor.copy(alpha = 0.7f),
         )
         Text(
-            text = "$repCount",
+            text = if (target != null) "$repCount / $target" else "$repCount",
             style = MaterialTheme.typography.displayLarge.copy(fontWeight = FontWeight.Bold),
             color = contentColor,
         )

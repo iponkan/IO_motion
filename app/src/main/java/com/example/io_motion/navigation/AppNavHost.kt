@@ -26,6 +26,7 @@ import com.example.io_motion.feature.home.HomeHubScreen
 import com.example.io_motion.feature.workout.builder.WorkoutBuilderScreen
 import com.example.io_motion.feature.workout.builder.WorkoutBuilderViewModel
 import com.example.io_motion.feature.workout.list.WorkoutListScreen
+import com.example.io_motion.feature.workout.run.WorkoutRunScreen
 import com.example.io_motion.feature.live.HomeScreen
 import com.example.io_motion.feature.live.LiveScreen
 import com.example.io_motion.feature.live.settings.SettingsScreen
@@ -34,7 +35,7 @@ import com.example.io_motion.feature.video.VideoScreen
 private object Routes {
     const val HOME       = "home"        // new hub (start destination)
     const val ASSESSMENT = "assessment"  // the former "home" exercise-picker (Motion Assessment setup)
-    const val LIVE       = "live/{exerciseType}/{modelVariant}"
+    const val LIVE       = "live/{exerciseType}/{modelVariant}?target={target}&workoutRun={workoutRun}"
     const val VIDEO      = "video/{exerciseType}/{modelVariant}"
     const val HISTORY    = "history"
     const val REPORT     = "report/{sessionId}"
@@ -44,8 +45,16 @@ private object Routes {
     const val WORKOUT_RUN     = "workout-run/{workoutId}"   // guided runner (Phase 5)
     const val DIET            = "diet"                       // :feature-diet (Phase 6)
 
-    fun live(exerciseType: ExerciseType, modelVariant: PoseModelVariant) =
-        "live/${exerciseType.name}/${modelVariant.name}"
+    // Optional guided-run args default to "no target"/false so the assessment flow keeps building
+    // the plain route; the runner passes a target and workoutRun=true.
+    const val NO_TARGET = -1
+
+    fun live(
+        exerciseType: ExerciseType,
+        modelVariant: PoseModelVariant,
+        target: Int = NO_TARGET,
+        workoutRun: Boolean = false,
+    ) = "live/${exerciseType.name}/${modelVariant.name}?target=$target&workoutRun=$workoutRun"
 
     fun video(exerciseType: ExerciseType, modelVariant: PoseModelVariant) =
         "video/${exerciseType.name}/${modelVariant.name}"
@@ -98,11 +107,13 @@ fun AppNavHost(
         composable(
             route = Routes.LIVE,
             arguments = listOf(
-                // Not read here — LiveViewModel reads "exerciseType"/"modelVariant" directly from
-                // the nav backstack's SavedStateHandle (see LiveViewModel), which avoids the
-                // initialize()-after-construction race the old approach had.
+                // Not read here — LiveViewModel reads these directly from the nav backstack's
+                // SavedStateHandle (see LiveViewModel), which avoids the initialize()-after-
+                // construction race the old approach had.
                 navArgument("exerciseType") { type = NavType.StringType },
                 navArgument("modelVariant") { type = NavType.StringType },
+                navArgument("target") { type = NavType.IntType; defaultValue = Routes.NO_TARGET },
+                navArgument("workoutRun") { type = NavType.BoolType; defaultValue = false },
             ),
         ) {
             LiveScreen(onNavigateBack = { navController.popBackStack() })
@@ -169,13 +180,22 @@ fun AppNavHost(
             WorkoutBuilderScreen(onNavigateBack = { navController.popBackStack() })
         }
 
-        // Placeholder replaced by the guided runner (Phase 5) and :feature-diet (Phase 6).
         composable(
             route = Routes.WORKOUT_RUN,
             arguments = listOf(navArgument("workoutId") { type = NavType.LongType }),
         ) {
-            ComingSoonScreen(title = "Guided Run")
+            WorkoutRunScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onLaunchLive = { exerciseType, modelVariant, target ->
+                    val variant = parseEnumOrDefault(modelVariant, PoseModelVariant.FULL)
+                    navController.navigate(Routes.live(exerciseType, variant, target = target, workoutRun = true))
+                },
+                // DONE returns to the workout list (the runner's parent), skipping the run screen.
+                onFinish = { navController.popBackStack(Routes.WORKOUTS, inclusive = false) },
+            )
         }
+
+        // Placeholder replaced by :feature-diet (Phase 6).
         composable(Routes.DIET) {
             ComingSoonScreen(title = "Diet Planning")
         }

@@ -43,6 +43,11 @@ class LiveViewModel @Inject constructor(
         LiveUiState(
             exerciseType = parseEnumOrDefault(savedStateHandle["exerciseType"], ExerciseType.SQUAT),
             modelVariant = parseEnumOrDefault(savedStateHandle["modelVariant"], PoseModelVariant.FULL),
+            // Optional guided-run args (default to "no target"/normal flow so untargeted sessions
+            // are untouched). Read here rather than via a later initialize() call for the same
+            // construction-time-correctness reason as exerciseType/modelVariant above.
+            target = savedStateHandle.get<Int>("target") ?: LiveUiState.NO_TARGET,
+            isWorkoutRun = savedStateHandle.get<Boolean>("workoutRun") ?: false,
         )
     )
     val uiState: StateFlow<LiveUiState> = _uiState.asStateFlow()
@@ -122,6 +127,23 @@ class LiveViewModel @Inject constructor(
                 fatalErrorMessage = null,
             )
         }
+
+        // Guided-run auto-stop: once the target is met, end the session exactly as if the user
+        // tapped Stop (persisting via stopSession) and surface the brief SET COMPLETE state.
+        if (currentState.isSessionActive && currentState.hasTarget && targetReached(analyzerState, currentState.target)) {
+            onTargetReached()
+        }
+    }
+
+    private fun targetReached(state: AnalyzerState, target: Int): Boolean = when (state) {
+        is AnalyzerState.Tracking     -> state.repCount >= target
+        is AnalyzerState.HoldTracking -> state.validHoldMs >= target * 1_000L
+        else -> false
+    }
+
+    private fun onTargetReached() {
+        stopSession()
+        _uiState.update { it.copy(isSetComplete = true) }
     }
 
     /**
