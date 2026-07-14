@@ -1,15 +1,7 @@
 package com.example.io_motion.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -20,6 +12,8 @@ import com.example.io_motion.core.common.models.AnalysisMode
 import com.example.io_motion.core.common.models.ExerciseType
 import com.example.io_motion.core.common.util.parseEnumOrDefault
 import com.example.io_motion.core.pose.model.PoseModelVariant
+import com.example.io_motion.feature.diet.DietPlanScreen
+import com.example.io_motion.feature.diet.DietScreen
 import com.example.io_motion.feature.history.HistoryScreen
 import com.example.io_motion.feature.history.SessionReportScreen
 import com.example.io_motion.feature.home.HomeHubScreen
@@ -43,7 +37,8 @@ private object Routes {
     const val WORKOUTS        = "workouts"
     const val WORKOUT_BUILDER = "workout-builder?workoutId={workoutId}"
     const val WORKOUT_RUN     = "workout-run/{workoutId}"   // guided runner (Phase 5)
-    const val DIET            = "diet"                       // :feature-diet (Phase 6)
+    const val DIET            = "diet"                       // diet home (Phase 6)
+    const val DIET_PLAN       = "diet-plan"                  // suggested meal plan (Phase 6)
 
     // Optional guided-run args default to "no target"/false so the assessment flow keeps building
     // the plain route; the runner passes a target and workoutRun=true.
@@ -195,21 +190,15 @@ fun AppNavHost(
             )
         }
 
-        // Placeholder replaced by :feature-diet (Phase 6).
         composable(Routes.DIET) {
-            ComingSoonScreen(title = "Diet Planning")
+            DietScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onOpenMealPlan = { navController.navigate(Routes.DIET_PLAN) },
+            )
         }
-    }
-}
 
-@Composable
-private fun ComingSoonScreen(title: String) {
-    Box(modifier = Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
-        Text(
-            text = "$title\ncoming soon",
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
+        composable(Routes.DIET_PLAN) {
+            DietPlanScreen(onNavigateBack = { navController.popBackStack() })
+        }
     }
 }

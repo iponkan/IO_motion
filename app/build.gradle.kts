@@ -66,6 +66,7 @@ dependencies {
     implementation(project(":data"))
     implementation(project(":feature-home"))
     implementation(project(":feature-workout"))
+    implementation(project(":feature-diet"))
     implementation(project(":feature-live"))
     implementation(project(":feature-video"))
     implementation(project(":feature-history"))

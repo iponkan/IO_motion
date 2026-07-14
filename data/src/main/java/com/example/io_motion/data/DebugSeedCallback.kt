@@ -2,6 +2,9 @@ package com.example.io_motion.data
 
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * One-shot demo seeder. [onCreate] fires exactly once, when the database file is first created, so
@@ -25,5 +28,13 @@ internal class DebugSeedCallback : RoomDatabase.Callback() {
         db.execSQL("INSERT INTO workout_entities (name, createdAt, sortOrder) VALUES ('Core Focus', ${now + 1}, 1)")
         db.execSQL("INSERT INTO workout_item_entities (workoutId, exerciseType, sets, reps, position) VALUES (2, 'SIT_UP', 4, 10, 0)")
         db.execSQL("INSERT INTO workout_item_entities (workoutId, exerciseType, sets, reps, position) VALUES (2, 'PLANK', 3, 30, 1)")
+
+        // Diet: today's sample meals (design §8). Date is computed with SimpleDateFormat (device
+        // zone) to avoid a java.time desugaring dependency in :data; it matches DietMath.dateKey's
+        // ISO yyyy-MM-dd format so the diet screen keys onto these on the install day.
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(now))
+        db.execSQL("INSERT INTO diet_entry_entities (localDate, mealType, name, kcal, loggedAt) VALUES ('$today', 'BREAKFAST', 'Oatmeal & Berries', 310, $now)")
+        db.execSQL("INSERT INTO diet_entry_entities (localDate, mealType, name, kcal, loggedAt) VALUES ('$today', 'LUNCH', 'Grilled Chicken Bowl', 420, $now)")
+        db.execSQL("INSERT INTO diet_entry_entities (localDate, mealType, name, kcal, loggedAt) VALUES ('$today', 'SNACKS', 'Greek Yogurt', 150, $now)")
     }
 }
